@@ -6,9 +6,7 @@
 <title>Priel, juist for the Mac and OPNsense</title>
 <meta name="description" content="A macOS menu bar app and an OPNsense plugin for juist, the peer-to-peer WireGuard mesh VPN.">
 <link rel="icon" href="img/icon-256.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wdth,wght@75..112.5,400..700&display=swap" rel="stylesheet">
+<link rel="preload" href="fonts/MartianMono.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
 <script>document.documentElement.classList.add('js');</script>
 </head>
@@ -37,11 +35,21 @@
         <a class="btn" href="https://github.com/0x23me/priel/releases/latest">Download for macOS</a>
         <a class="btn btn--line" href="#opnsense">The OPNsense plugin</a>
       </div>
+      <div class="well">
+        <div class="cmd">
+          <div><code><span class="p">$ </span>brew trust --cask <span class="arg">0x23me/tap/priel</span></code></div>
+          <button class="copy" type="button" aria-label="Copy the trust command" data-copy="brew trust --cask 0x23me/tap/priel"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button>
+        </div>
+        <div class="cmd">
+          <div><code><span class="p">$ </span>brew install --cask <span class="arg">0x23me/tap/priel</span></code><small>Or the download, signed and notarized.</small></div>
+          <button class="copy" type="button" aria-label="Copy the install command" data-copy="brew install --cask 0x23me/tap/priel"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button>
+        </div>
+      </div>
     </div>
     <div class="art">
       <pre aria-hidden="true">{{PRE}}</pre>
       <canvas aria-hidden="true"></canvas>
-      <figure class="window" data-slot="window" data-kind="product" data-alt="Priel's window, connected, one device reached directly">
+      <figure class="window">
         <img src="img/window-connected.png" width="680" height="536" fetchpriority="high" alt="Priel's window: the switch on, this Mac's addresses, the network lab connected, the device gate reached directly at 4 ms with its last handshake and bytes each way, a subnet not in use because this Mac is inside it, and the tunnel's rate and totals.">
       </figure>
     </div>
@@ -60,7 +68,7 @@
         <li class="del"><span class="sign">-</span><code>sudo launchctl bootstrap system io.juist.juistd.plist</code></li>
         <li class="del"><span class="sign">-</span><code>sudo launchctl bootout system/io.juist.juistd</code></li>
         <li class="del"><span class="sign">-</span><code>juist status   # is it even up?</code></li>
-        <li class="add"><span class="sign">+</span><span>a switch; one admin prompt, the first time</span></li>
+        <li class="add"><span class="sign">+</span><span>a switch; a password the first time and after updates</span></li>
         <li class="add"><span class="sign">+</span><span>every device: direct or relayed, handshake, ms</span></li>
         <li class="add"><span class="sign">+</span><span>join with the code from juist invite</span></li>
       </ol>
@@ -81,21 +89,21 @@
         <button type="button" role="tab" id="t3" aria-controls="p3" aria-selected="false" tabindex="-1">Fresh Mac</button>
       </div>
       <div class="panel" role="tabpanel" id="p1" aria-labelledby="t1">
-        <figure class="shot" data-slot="state-connected" data-kind="product" data-alt="The window with several devices"><img src="img/window-several.png" width="680" height="662" loading="lazy" alt="Priel's window with three devices: gate reached directly at 4 ms, nas through gate's relay at 31 ms, pi offline."></figure>
+        <figure class="shot"><img src="img/window-several.png" width="680" height="662" loading="lazy" alt="Priel's window with three devices: gate reached directly at 4 ms, nas through gate's relay at 31 ms, pi offline."></figure>
         <div>
           <h3>Direct, relayed, gone</h3>
           <p>Relayed devices name their relay. Offline ones just say offline. A juist subnet you’re already on shows as not in use, so your LAN keeps working.</p>
         </div>
       </div>
       <div class="panel" role="tabpanel" id="p2" aria-labelledby="t2">
-        <figure class="shot" data-slot="state-reader" data-kind="product" data-alt="The window as a user who is not the operator"><img src="img/window-reader.png" width="680" height="604" loading="lazy" alt="Priel's window showing the device as member 1, no latency, and a Become Operator button."></figure>
+        <figure class="shot"><img src="img/window-reader.png" width="680" height="604" loading="lazy" alt="Priel's window showing the device as member 1, no latency, and a Become Operator button."></figure>
         <div>
           <h3>Member 1, no ping</h3>
           <p>juistd hides names from users who aren’t its operator. Become Operator asks for your password once and fixes it.</p>
         </div>
       </div>
       <div class="panel" role="tabpanel" id="p3" aria-labelledby="t3">
-        <figure class="shot" data-slot="state-join" data-kind="product" data-alt="The window on a Mac in no network yet"><img src="img/window-join.png" width="680" height="402" loading="lazy" alt="Priel's window with an invite code field and a Join button."></figure>
+        <figure class="shot"><img src="img/window-join.png" width="680" height="402" loading="lazy" alt="Priel's window with an invite code field and a Join button."></figure>
         <div>
           <h3>Paste the invite code</h3>
           <p>Run juist invite on any member, paste the code here. You also become this Mac’s operator.</p>
@@ -264,7 +272,5 @@ document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('clic
   navigator.clipboard.writeText(text).then(() => { b.classList.add('is-done'); setTimeout(() => b.classList.remove('is-done'), 1400); });
 }));
 </script>
-<script>window.hallmarkSlots = (m) => { for (const [k, v] of Object.entries(m)) { const s = document.querySelector(`[data-slot="${k}"]`); if (!s) continue; const im = new Image(); im.src = typeof v === 'string' ? v : v.src; im.alt = (typeof v === 'object' && v.alt) || s.dataset.alt || ''; s.querySelectorAll(':scope > img').forEach((o) => o.remove()); s.prepend(im); } };
-document.querySelectorAll('[data-slot] img').forEach((i) => { if (i.complete && !i.naturalWidth) i.remove(); else i.addEventListener('error', () => i.remove(), { once: true }); });</script>
 </body>
 </html>

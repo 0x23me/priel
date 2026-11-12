@@ -1,11 +1,8 @@
-/* Hallmark · shape: Workbench · genre: atmospheric · theme: Terminal (deal 2/3, seed priel-unofficial-macos-menu-45c1·20820695·2026-11-12·r0) · job: try · draw: d08ca9
- * hero: Settled · nav: edge-aligned (swapped from search-led: nothing to search) · footer: index columns · imagery: screenshots 4 (the app's own window, rendered from test data) · signature: the tidal channel from the app icon printed in juistd's status text, the app window resting on it
- * axes: dark/mono/chromatic-green · posture: committed · contrast: pass · fold: pass · v2.0.0 */
-/* Hallmark · pre-emit critique: P4 H4 E4 S5 R4 V4 · weakest: P, a utility page has little to argue; it argues the switch against the two shell scripts it replaced, in a diff */
-/* Hallmark · finish-review: subagent · 8 findings · 7 resolved, 1 dismissed (42: the nav is named in the stamp) · copy: 9 lines rewritten plainer */
-/* Hallmark · dismissed 58 · the firewall screen holds two pkg add URLs, counted as words, which a visitor copies rather than reads */
 @import url("./tokens.css");
 @import url("./base.css");
+
+/* Martian Mono (SIL OFL 1.1), served from here rather than Google Fonts: Latin, both axes. */
+@font-face { font-family: "Martian Mono"; src: url("fonts/MartianMono.woff2") format("woff2"); font-weight: 400 700; font-stretch: 75% 112.5%; font-display: swap; }
 
 body { font-stretch: var(--stretch-body); font-variant-numeric: tabular-nums; }
 h1, h2, h3 { font-weight: var(--display-weight); font-stretch: var(--stretch-display); letter-spacing: var(--tracking-display); line-height: 1.12; }
@@ -50,11 +47,6 @@ code, pre, kbd { font-family: var(--font-display); }
 .js .art pre { visibility: hidden; }
 .art .window { position: absolute; left: 0; top: 0; width: min(52%, 400px); margin: 0; z-index: var(--z-raised); }
 .window img, .shot img { outline: 1px solid color-mix(in oklab, var(--color-ink) 10%, transparent); outline-offset: -1px; }
-
-/* Product captures keep their own colours: no duotone on the app's window. */
-[data-kind="product"], [data-kind="product"]:has(> img) { background: none; isolation: auto; outline: none; }
-[data-kind="product"] > img { position: static; filter: none; mix-blend-mode: normal; object-fit: contain; }
-[data-kind="product"]:has(> img)::before { content: none; }
 
 /* Sections */
 .section { padding-block: var(--section-gap); border-top: var(--rule-hair) solid var(--color-rule); }
