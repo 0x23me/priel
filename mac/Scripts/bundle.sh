@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Builds and signs .build/Priel.app for arm64 and x86_64: the menu bar app, the patched juist
-# and juistd from juist/build (built by juist/build.sh when missing or older than the patch),
+# and juistd from juist/build (built by juist/build.sh when missing or older than juist/VERSION),
 # and the launchd daemon the app registers to run juistd.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 identity="${JUIST_SIGN_IDENTITY:-Developer ID Application}"
 go=juist/build
-if [ ! -x "$go/juistd" ] || [ juist/macos.patch -nt "$go/juistd" ] || [ juist/VERSION -nt "$go/juistd" ]; then
+if [ ! -x "$go/juistd" ] || [ juist/VERSION -nt "$go/juistd" ]; then
     sh juist/build.sh
 fi
 version="${PRIEL_VERSION:-0.0.0}"

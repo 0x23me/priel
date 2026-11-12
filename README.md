@@ -38,10 +38,12 @@ echo "--no-dht --no-stun" | sudo tee /etc/priel/juistd.flags
 
 Flip the switch off and on to pick it up.
 
-The bundled juist has a small patch, [`mac/juist/macos.patch`](mac/juist/macos.patch). It leaves
-a juist subnet out of the tunnel while the Mac sits on a network inside that subnet (so at home
-your LAN stays direct), and it lets juistd tell the app each peer's last handshake and byte
-counts. Building it yourself: [mac/README.md](mac/README.md).
+The bundled juist comes from [0x23me/juist](https://github.com/0x23me/juist), juist plus three
+small commits on the `priel` branch. They leave a juist subnet out of the tunnel while the Mac
+sits on a network inside that subnet (so at home your LAN stays direct), let juistd tell the app
+each peer's last handshake and byte counts, and fix a build tag on macOS. The subnet one is my
+policy, not a safe default: any network numbered inside the subnet gets the same treatment.
+Building it yourself: [mac/README.md](mac/README.md).
 
 ## OPNsense
 

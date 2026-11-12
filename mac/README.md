@@ -2,8 +2,9 @@
 
 A Swift package: `JuistKit` (juistd's socket and its CBOR, the status, the tunnel's 64-bit
 interface counters, the daemon's registration with `SMAppService`) and `Priel` (the SwiftUI
-`MenuBarExtra` app). `juist/` holds the juist version, `macos.patch` and `build.sh`, which
-builds `juist` and `juistd` from juist's source for arm64 and x86_64.
+`MenuBarExtra` app). `juist/` holds the juist version and `build.sh`, which
+builds `juist` and `juistd` for arm64 and x86_64 from that tag of
+[0x23me/juist](https://github.com/0x23me/juist).
 
 ```sh
 just test                 # unit tests; JUIST_LIVE_TESTS=1 adds the ones against a running juistd
@@ -16,12 +17,16 @@ Signing uses the "Developer ID Application" identity in your keychain
 `priel` (`PRIEL_NOTARY_PROFILE` names another), stored once with
 `xcrun notarytool store-credentials priel`.
 
-## The patch
+## The juist fork
 
+[0x23me/juist](https://github.com/0x23me/juist) is upstream juist with three commits on the
+`priel` branch, tagged `vX.Y.Z-priel.N`:
+
+- On macOS, the rc.d service helpers are built rather than the systemd ones.
 - On macOS, a juist subnet is left out of the tunnel while the Mac is on a network inside it.
 - juistd reports each peer's last handshake and bytes received and sent, as `PeerReach` keys
-  100–102, when a status request sets `Figures` (key 100). The stock `juist` never sets it and
-  gets the stock answer, so the command line from juist's own release keeps working.
+  100 to 102, when a status request sets `Figures` (key 100). The stock `juist` never sets it
+  and gets the stock answer, so juist's own command line keeps working.
 
 ## The daemon
 
@@ -33,10 +38,11 @@ root owns that file and no one else can write it. Its log is `/var/log/juistd.lo
 
 ## Upgrading juist
 
-1. Put the new tag in `juist/VERSION` and rebase `macos.patch` onto it: clone the tag, `git
-   apply --3way` the patch, fix what does not apply, run `go test ./ipc ./daemon` with a short
-   `TMPDIR` (unix socket paths are limited to 104 bytes), and write the diff back.
-2. `just install`, then turn the switch off and on to run the new juistd.
+1. In a clone of the fork: fetch upstream's new tag, `git rebase --onto vNEW vOLD priel`, fix what
+   conflicts, run `go test ./ipc ./daemon` with a short `TMPDIR` (unix socket paths are limited
+   to 104 bytes), tag `vNEW-priel.1` and push the branch and the tag.
+2. Put that tag in `juist/VERSION`, `just install`, then turn the switch off and on to run the
+   new juistd.
 3. Capture the status again and run the tests, which fail when juistd's status changed in a way
    the app reads: `just capture operator-figures --figures` as the operator; for the view of a
    user who is not, as one who cannot read your home folder,

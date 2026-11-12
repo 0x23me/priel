@@ -14,7 +14,7 @@ jobs:
           go-version: stable
       - name: Unit tests
         run: cd mac && swift test
-      - name: juist builds with the patch
+      - name: juist builds from the fork
         run: sh mac/juist/build.sh
 
   opnsense:

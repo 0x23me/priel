@@ -13,7 +13,7 @@ build:
 test:
     swift test
 
-# Build juist with the macOS patch if needed, then build and sign .build/Priel.app
+# Build juist from the fork if needed, then build and sign .build/Priel.app
 bundle:
     ./Scripts/bundle.sh
 
