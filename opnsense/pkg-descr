@@ -6,11 +6,18 @@ This plugin runs juistd on the firewall, has the ruleset call juist's pf
 anchors, opens its ports, shows the network's devices, and can hold an
 admin key to invite and remove devices from the GUI.
 
-The juist package itself comes from juist's own repository and is not a
-dependency of this plugin: https://github.com/nning/juist
+It depends on the juist package, from juist's own pkg repository:
+https://github.com/nning/juist
 
 Plugin Changelog
 ================
+
+0.1.1
+
+* invites: only while one runs is it shown or cancelled; 15 minutes, an hour or a day
+* removing devices whose name has an underscore
+* the API takes only what the page sends
+* the admin keystore must be root's alone
 
 0.1
 

@@ -1,7 +1,7 @@
 PLUGIN_NAME=		juist
-PLUGIN_VERSION=		0.1
+PLUGIN_VERSION=		0.1.1
 PLUGIN_COMMENT=		Peer-to-peer WireGuard mesh VPN without a coordination server
-PLUGIN_MAINTAINER=	noreply@github.com
+PLUGIN_MAINTAINER=	https://github.com/0x23me/priel
 PLUGIN_DEVEL=		yes
 
 .include "../../Mk/plugins.mk"

@@ -32,7 +32,7 @@ cat > "$work/manifest.json" <<JSON
 	"name": "$name",
 	"origin": "opnsense/$name",
 	"comment": "$(sed -n 's/^PLUGIN_COMMENT=[[:space:]]*//p' Makefile)",
-	"maintainer": "noreply@github.com",
+	"maintainer": "https://github.com/0x23me/priel",
 	"www": "https://github.com/0x23me/priel",
 	"prefix": "/usr/local",
 	"licenselogic": "single",

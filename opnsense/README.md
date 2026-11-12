@@ -16,6 +16,28 @@ Runs juistd on the firewall and gives it a page under VPN › juist. What it tou
 It doesn't route anything for you. Rules from the `juist` group to your LAN are yours to write,
 same as any other VPN.
 
+## The admin key
+
+Inviting and removing devices from the GUI needs an admin key on the firewall, in
+`/var/db/juist-admin`, which has to be root's and closed to everyone else (the plugin refuses
+it otherwise). Make one there, as root, and give it a vote from a machine that already has one:
+
+```sh
+install -d -m 700 /var/db/juist-admin
+JUIST_HOME=/var/db/juist-admin juist admins new firewall   # prints its key
+juist admins add firewall KEY                              # on an existing admin's machine
+```
+
+Or bring an existing key: `juist admins export NAME` on its machine, then
+`JUIST_HOME=/var/db/juist-admin juist admins import NAME` here, pasting the line. Then tick Admin
+in the plugin's settings.
+
+An invite from the GUI is `juist invite --yes --no-lan`: a link that admits whoever opens it
+first, until it expires (15 minutes, an hour or a day), without the words `juist invite`
+otherwise has both sides compare. Anyone who can open the plugin's status page can read the
+link while it lasts. Send it somewhere only the new device's owner reads, and cancel it if it
+went astray.
+
 ## Install
 
 OPNsense 26.7 or later (FreeBSD 15), amd64 or arm64. Add juist's repository and this one, then

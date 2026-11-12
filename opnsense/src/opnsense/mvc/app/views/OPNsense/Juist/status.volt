@@ -125,7 +125,7 @@
             </select>
             <button class="btn btn-primary" id="inviteStart" type="button">{{ lang._('Invite a device') }}</button>
             <button class="btn btn-default" id="inviteCancel" type="button" style="display: none;">{{ lang._('Cancel invite') }}</button>
-            <br/><br/>
+            <p class="text-muted" style="margin-top: 8px;">{{ lang._('The link admits whoever opens it first, until it expires: there are no words to compare, as juist invite asks for on the command line. Anyone who can open this page sees the link. Send it over a channel you trust, and cancel it if it went astray.') }}</p>
             <pre id="inviteLink" style="white-space: pre-wrap; word-break: break-all;"></pre>
             <pre id="inviteOutput"></pre>
         </div>

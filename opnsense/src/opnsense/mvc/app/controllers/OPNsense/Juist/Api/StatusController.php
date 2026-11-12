@@ -19,9 +19,12 @@ class StatusController extends ApiControllerBase
         return !$this->request->isPost() || empty((string)(new Settings())->admin);
     }
 
-    /* status, devices, health, log, subnets, admins and invite-status */
+    /* status, devices, health, log, subnets, admins and invite-status: reads, nothing else */
     public function showAction($what = 'status')
     {
+        if (!in_array($what, ['status', 'devices', 'health', 'log', 'subnets', 'admins', 'invite-status'], true)) {
+            return ['rc' => 2, 'output' => gettext('Unknown request.')];
+        }
         return $this->backend('query', [$what]);
     }
 
@@ -30,10 +33,12 @@ class StatusController extends ApiControllerBase
         if ($this->denied()) {
             return ['rc' => 1, 'output' => gettext('This firewall holds no admin key.')];
         }
-        return $this->backend('invite', [
-            $this->request->getPost('action', 'string', 'start'),
-            $this->request->getPost('expires', 'string', '15m'),
-        ]);
+        $action = $this->request->getPost('action', 'string', 'start');
+        $expires = $this->request->getPost('expires', 'string', '15m');
+        if (!in_array($action, ['start', 'cancel'], true) || !in_array($expires, ['15m', '1h', '1d'], true)) {
+            return ['rc' => 2, 'output' => gettext('Unknown request.')];
+        }
+        return $this->backend('invite', [$action, $expires]);
     }
 
     public function removeAction()
@@ -41,6 +46,10 @@ class StatusController extends ApiControllerBase
         if ($this->denied()) {
             return ['rc' => 1, 'output' => gettext('This firewall holds no admin key.')];
         }
-        return $this->backend('remove', [$this->request->getPost('device', 'string', '')]);
+        $device = $this->request->getPost('device', 'string', '');
+        if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*$/', $device)) {
+            return ['rc' => 2, 'output' => gettext('Not a device name.')];
+        }
+        return $this->backend('remove', [$device]);
     }
 }
