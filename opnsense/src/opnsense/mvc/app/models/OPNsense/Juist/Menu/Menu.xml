@@ -1,0 +1,8 @@
+<menu>
+    <VPN>
+        <Juist VisibleName="juist" cssClass="fa fa-share-alt fa-fw">
+            <Settings order="1" url="/ui/juist/settings"/>
+            <Status order="2" url="/ui/juist/status"/>
+        </Juist>
+    </VPN>
+</menu>

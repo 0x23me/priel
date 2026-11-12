@@ -1,0 +1,295 @@
+diff --git a/conn/manager.go b/conn/manager.go
+index 0a1531c..d87db6b 100644
+--- a/conn/manager.go
++++ b/conn/manager.go
+@@ -222,6 +222,9 @@ type Tunnel struct {
+ 	// LastHandshake is when a handshake last completed, zero if none has.
+ 	LastHandshake time.Time
+ 
++	// RxBytes and TxBytes are what the tunnel received and sent.
++	RxBytes, TxBytes uint64
++
+ 	// Direct is the UDP path the tunnel uses, invalid where it has none and
+ 	// runs through a relay if at all.
+ 	Direct netip.AddrPort
+diff --git a/conn/tsmanager.go b/conn/tsmanager.go
+index eb55c47..b99984e 100644
+--- a/conn/tsmanager.go
++++ b/conn/tsmanager.go
+@@ -688,7 +688,7 @@ func (m *tsManager) Tunnels() map[uint64]Tunnel {
+ 	out := make(map[uint64]Tunnel, len(st.Peer))
+ 	for nk, ps := range st.Peer {
+ 		if p, ok := peers[nk]; ok {
+-			t := Tunnel{LastHandshake: ps.LastHandshake}
++			t := Tunnel{LastHandshake: ps.LastHandshake, RxBytes: uint64(max(ps.RxBytes, 0)), TxBytes: uint64(max(ps.TxBytes, 0))}
+ 			if ap, err := netip.ParseAddrPort(ps.CurAddr); err == nil {
+ 				t.Direct = ap
+ 			}
+diff --git a/daemon/control.go b/daemon/control.go
+index ac45de5..5cd5f35 100644
+--- a/daemon/control.go
++++ b/daemon/control.go
+@@ -188,6 +188,9 @@ func (s *Service) handle(ctx context.Context, req *ipc.Request, who caller, even
+ 
+ func (s *Service) callStatus(c *call) (*ipc.Response, error) {
+ 	st := s.Status()
++	if m := s.Mesh(); m != nil && c.req.Figures {
++		st.Reach = m.tunnelFigures(st.Reach)
++	}
+ 	st.CanOperate = s.mayOperate(c.who)
+ 	if !st.CanOperate {
+ 		st = st.ForReader()
+diff --git a/daemon/figures.go b/daemon/figures.go
+new file mode 100644
+index 0000000..4b3aca4
+--- /dev/null
++++ b/daemon/figures.go
+@@ -0,0 +1,35 @@
++package daemon
++
++import (
++	"slices"
++
++	"github.com/nning/juist/ipc"
++	"github.com/nning/juist/types"
++)
++
++// tunnelFigures is rs with each peer's last handshake and traffic, read from
++// the data plane now: the tunnel check that fills the rest of rs runs only
++// every 30s. A macOS patch.
++func (d *Daemon) tunnelFigures(rs []ipc.PeerReach) []ipc.PeerReach {
++	d.mu.Lock()
++	peers := d.installed
++	d.mu.Unlock()
++	ids := make(map[types.Identity]uint64, len(peers))
++	for _, p := range peers {
++		ids[p.id] = p.peer.ID
++	}
++	tunnels := d.manager.Tunnels()
++	out := slices.Clone(rs)
++	for i := range out {
++		id, ok := ids[out[i].Identity]
++		if !ok {
++			continue
++		}
++		t := tunnels[id]
++		if !t.LastHandshake.IsZero() {
++			out[i].Handshake = t.LastHandshake.Unix()
++		}
++		out[i].RxBytes, out[i].TxBytes = t.RxBytes, t.TxBytes
++	}
++	return out
++}
+diff --git a/daemon/figures_test.go b/daemon/figures_test.go
+new file mode 100644
+index 0000000..4e316cb
+--- /dev/null
++++ b/daemon/figures_test.go
+@@ -0,0 +1,60 @@
++package daemon
++
++import (
++	"testing"
++	"time"
++
++	"github.com/nning/juist/conn"
++	"github.com/nning/juist/ipc"
++)
++
++// A status that asks for them carries each peer's last handshake and
++// traffic, read from the data plane at the time; a peer without a handshake
++// has none, and a reader sees the figures too.
++func TestTunnelFiguresAreReadWhenAsked(t *testing.T) {
++	f := newReconcileFixture(t, 3)
++	f.learn(t, f.nw.devices[1], 7001)
++	f.learn(t, f.nw.devices[2], 7002)
++	if err := f.d.Reconcile(); err != nil {
++		t.Fatal(err)
++	}
++	f.d.refreshReach(t.Context())
++	live := f.installed(t, 1)
++	at := time.Unix(1_700_000_123, 0)
++	f.mgr.mu.Lock()
++	f.mgr.tunnels = map[uint64]conn.Tunnel{live.ID: {LastHandshake: at, RxBytes: 4096, TxBytes: 512}}
++	f.mgr.mu.Unlock()
++
++	before := f.d.Status().Reach
++	got := f.d.tunnelFigures(before)
++	if len(got) != 2 {
++		t.Fatalf("%d peers in the status, want 2", len(got))
++	}
++	for i, r := range got {
++		switch r.Identity {
++		case f.nw.devices[1].record.Identity:
++			if r.Handshake != at.Unix() || r.RxBytes != 4096 || r.TxBytes != 512 {
++				t.Errorf("live peer: handshake %d, rx %d, tx %d", r.Handshake, r.RxBytes, r.TxBytes)
++			}
++		case f.nw.devices[2].record.Identity:
++			if r.Handshake != 0 || r.RxBytes != 0 || r.TxBytes != 0 {
++				t.Errorf("peer without a handshake: handshake %d, rx %d, tx %d", r.Handshake, r.RxBytes, r.TxBytes)
++			}
++		default:
++			t.Errorf("unknown peer at %d", i)
++		}
++		if before[i].Handshake != 0 {
++			t.Error("the daemon's own status was changed")
++		}
++	}
++
++	st := ipc.Status{Tunnels: ipc.Tunnels{Reach: got}}
++	reader := st.ForReader()
++	var seen bool
++	for _, r := range reader.Reach {
++		seen = seen || r.Handshake == at.Unix() && r.RxBytes == 4096
++	}
++	if !seen {
++		t.Error("the reader's view lost the figures")
++	}
++}
+diff --git a/daemon/subnet.go b/daemon/subnet.go
+index e05c697..2f82403 100644
+--- a/daemon/subnet.go
++++ b/daemon/subnet.go
+@@ -2,6 +2,7 @@ package daemon
+ 
+ import (
+ 	"net/netip"
++	"runtime"
+ 	"slices"
+ 	"strings"
+ 
+@@ -94,6 +95,8 @@ func (d *Daemon) planSubnets(s snapshot, fresh bool, held map[types.Identity]gos
+ 				r.Why = "its router " + errNotPQ
+ 			case len(parts) == 0:
+ 				r.Why = "the access policy passes none of it to this device"
++			case runtime.GOOS == "darwin" && onNetworkIn(pfx, host):
++				r.Why = "this device is on a network inside it"
+ 			default:
+ 				var left, kept, wider []netip.Prefix
+ 				for _, part := range parts {
+@@ -128,6 +131,16 @@ func (d *Daemon) planSubnets(s snapshot, fresh bool, held map[types.Identity]gos
+ 	return p
+ }
+ 
++// onNetworkIn reports whether a network the host is on lies in pfx. A laptop
++// on one of a site's networks reaches the rest of that site by its gateway
++// there, so the whole subnet is left to the host; macOS alone, where the
++// host's routes are the networks it is attached to.
++func onNetworkIn(pfx netip.Prefix, host []netip.Prefix) bool {
++	return slices.ContainsFunc(host, func(h netip.Prefix) bool {
++		return h.Bits() >= pfx.Bits() && pfx.Contains(h.Addr())
++	})
++}
++
+ // without is pfx less what host routes of it, what of pfx they do, and the
+ // wider host routes holding it. Only a route inside pfx counts: a wider one,
+ // as a DHCP server's /8 netmask or a router advertisement's short prefix
+diff --git a/ipc/figures_test.go b/ipc/figures_test.go
+new file mode 100644
+index 0000000..702fba5
+--- /dev/null
++++ b/ipc/figures_test.go
+@@ -0,0 +1,22 @@
++package ipc
++
++import "testing"
++
++// A status request may ask for the tunnel figures; no other command takes
++// the field.
++func TestOnlyStatusAsksForFigures(t *testing.T) {
++	b, err := encode(&Request{Command: CmdStatus, Figures: true}, MaxRequest)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if got, err := DecodeRequest(b); err != nil || !got.Figures {
++		t.Fatalf("status asking for figures: %+v, %v", got, err)
++	}
++	b, err = encode(&Request{Command: CmdSelf, Figures: true}, MaxRequest)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if _, err := DecodeRequest(b); err == nil {
++		t.Error("a self request asking for figures was accepted")
++	}
++}
+diff --git a/ipc/ipc.go b/ipc/ipc.go
+index 57b92b4..9074a45 100644
+--- a/ipc/ipc.go
++++ b/ipc/ipc.go
+@@ -249,6 +249,11 @@ type Request struct {
+ 	// Ping is the member a [CmdPing] pings.
+ 	Ping types.Identity `cbor:"31,keyasint,omitempty"`
+ 
++	// Figures asks a [CmdStatus] for each peer's handshake and traffic in
++	// [PeerReach]. A macOS patch: its keys stay off the answer unless asked
++	// for, as a stock juist refuses fields it does not know.
++	Figures bool `cbor:"100,keyasint,omitempty"`
++
+ 	// HTTPSOnly, Proxy and RelayName are what a [CmdSettings] sets: whether
+ 	// this device sends nothing but TLS to relays on 443, the HTTP proxy it
+ 	// reaches them through, "" for its environment's, and the public name
+@@ -686,6 +691,7 @@ const (
+ 	fPing
+ 	fListening // Listening and Unbound
+ 	fSettings  // HTTPSOnly, Proxy, RelayName, DNS, Multicast and Groups
++	fFigures
+ )
+ 
+ // present lists the optional fields r sets.
+@@ -706,7 +712,7 @@ func (r *Request) present() reqField {
+ 		{r.Account != nil || len(r.NoCert) > 0 || r.Stopping, fAccount},
+ 		{len(r.Listening) > 0 || len(r.Unbound) > 0, fListening},
+ 		{r.Share != nil, fShare}, {!r.Ping.IsZero(), fPing},
+-		{r.Settings(), fSettings},
++		{r.Settings(), fSettings}, {r.Figures, fFigures},
+ 	} {
+ 		if p.set {
+ 			f |= p.f
+@@ -725,7 +731,7 @@ type requestShape struct {
+ }
+ 
+ var requestShapes = map[Command]requestShape{
+-	CmdStatus:  {name: "status"},
++	CmdStatus:  {name: "status", takes: fFigures},
+ 	CmdLog:     {name: "log", takes: fOrphans},
+ 	CmdSelf:    {name: "self"},
+ 	CmdUnstage: {name: "unstage"},
+diff --git a/ipc/status.go b/ipc/status.go
+index 440a45f..7c507bf 100644
+--- a/ipc/status.go
++++ b/ipc/status.go
+@@ -513,6 +513,14 @@ type PeerReach struct {
+ 	// of [Tunnels.OlderBuild].
+ 	Outdated   bool `cbor:"9,keyasint,omitempty"`
+ 	OlderBuild bool `cbor:"10,keyasint,omitempty"`
++
++	// Handshake is when the tunnel's last handshake completed, in Unix
++	// seconds, 0 for none, and RxBytes and TxBytes what it carried since
++	// juistd started; read when the status is asked for, and only when the
++	// request asks for them ([Request.Figures]). A macOS patch.
++	Handshake int64  `cbor:"100,keyasint,omitempty"`
++	RxBytes   uint64 `cbor:"101,keyasint,omitempty"`
++	TxBytes   uint64 `cbor:"102,keyasint,omitempty"`
+ }
+ 
+ // A Device is a member as the log lists it.
+diff --git a/ipc/system_rcd.go b/ipc/system_rcd.go
+index aba6ed6..f867a02 100644
+--- a/ipc/system_rcd.go
++++ b/ipc/system_rcd.go
+@@ -1,4 +1,4 @@
+-//go:build freebsd || freebsdman
++//go:build freebsd || freebsdman || darwin
+ 
+ package ipc
+ 
+diff --git a/ipc/system_systemd.go b/ipc/system_systemd.go
+index 81f97cb..ba1ed95 100644
+--- a/ipc/system_systemd.go
++++ b/ipc/system_systemd.go
+@@ -1,4 +1,4 @@
+-//go:build !freebsd && !freebsdman
++//go:build !freebsd && !freebsdman && !darwin
+ 
+ package ipc
+ 

@@ -1,0 +1,59 @@
+<form>
+    <field>
+        <id>settings.enabled</id>
+        <label>Enabled</label>
+        <type>checkbox</type>
+        <help>Run juistd on this firewall and have the ruleset call its anchors.</help>
+    </field>
+    <field>
+        <id>settings.port</id>
+        <label>Port</label>
+        <type>text</type>
+        <help>UDP port for WireGuard and path discovery.</help>
+    </field>
+    <field>
+        <id>settings.relay</id>
+        <label>Relay</label>
+        <type>checkbox</type>
+        <help>Let this firewall relay for members that cannot reach each other, once an admin has granted it the relay role.</help>
+    </field>
+    <field>
+        <id>settings.relayPort</id>
+        <label>Relay port</label>
+        <type>text</type>
+        <advanced>true</advanced>
+        <help>TCP and UDP port for relaying.</help>
+    </field>
+    <field>
+        <id>settings.openPorts</id>
+        <label>Open ports</label>
+        <type>checkbox</type>
+        <help>Add firewall rules that let juist's ports in on the interfaces below.</help>
+    </field>
+    <field>
+        <id>settings.interfaces</id>
+        <label>Interfaces</label>
+        <type>select_multiple</type>
+        <help>Interfaces members reach this firewall on, usually WAN.</help>
+    </field>
+    <field>
+        <id>settings.dht</id>
+        <label>Use the public DHT</label>
+        <type>checkbox</type>
+        <advanced>true</advanced>
+        <help>Find members and meet invited devices through the public BitTorrent DHT.</help>
+    </field>
+    <field>
+        <id>settings.stun</id>
+        <label>Use public STUN servers</label>
+        <type>checkbox</type>
+        <advanced>true</advanced>
+        <help>Ask STUN servers outside the network for this firewall's public address.</help>
+    </field>
+    <field>
+        <id>settings.admin</id>
+        <label>Admin</label>
+        <type>checkbox</type>
+        <help>Invite and remove devices from the status page, with the admin key in /var/db/juist-admin.</help>
+    </field>
+</form>

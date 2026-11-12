@@ -1,0 +1,9 @@
+<acl>
+    <page-juist-config>
+        <name>VPN: juist</name>
+        <patterns>
+            <pattern>ui/juist/*</pattern>
+            <pattern>api/juist/*</pattern>
+        </patterns>
+    </page-juist-config>
+</acl>

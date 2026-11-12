@@ -1,0 +1,33 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  mac:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Unit tests
+        run: cd mac && swift test
+      - name: juist builds with the patch
+        run: sh mac/juist/build.sh
+
+  opnsense:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Plugin packages
+        run: |
+          cd opnsense/tools && go vet ./...
+          cd .. && sh build-pkg.sh
+          php -l src/etc/inc/plugins.inc.d/juist.inc
+          find src -name '*.php' -exec php -l {} \;
+          python3 -m py_compile src/opnsense/scripts/juist/juist.py

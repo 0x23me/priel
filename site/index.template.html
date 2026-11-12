@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Priel, juist for the Mac and OPNsense</title>
+<meta name="description" content="A macOS menu bar app and an OPNsense plugin for juist, the peer-to-peer WireGuard mesh VPN.">
+<link rel="icon" href="img/icon-256.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wdth,wght@75..112.5,400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="container">
+    <a class="mark" href="./" aria-label="Priel, home"><img src="img/icon-256.png" width="28" height="28" alt="">priel</a>
+    <ul>
+      <li><a href="#window">The window</a></li>
+      <li><a href="#opnsense">OPNsense</a></li>
+      <li><a href="https://github.com/0x23me/priel">Source</a></li>
+      <li><a class="btn" href="https://github.com/0x23me/priel/releases/latest">Download</a></li>
+    </ul>
+  </div>
+</header>
+
+<main id="main">
+<section class="hero">
+  <div class="container">
+    <div class="hero__text">
+      <h1>juist, with a switch.</h1>
+      <p class="lead">A juist menu bar app for the Mac, and an OPNsense plugin.</p>
+      <div class="actions">
+        <a class="btn" href="https://github.com/0x23me/priel/releases/latest">Download for macOS</a>
+        <a class="btn btn--line" href="#opnsense">The OPNsense plugin</a>
+      </div>
+    </div>
+    <div class="art">
+      <pre aria-hidden="true">{{PRE}}</pre>
+      <canvas aria-hidden="true"></canvas>
+      <figure class="window" data-slot="window" data-kind="product" data-alt="Priel's window, connected, one device reached directly">
+        <img src="img/window-connected.png" width="680" height="536" fetchpriority="high" alt="Priel's window: the switch on, this Mac's addresses, the network lab connected, the device gate reached directly at 4 ms with its last handshake and bytes each way, a subnet not in use because this Mac is inside it, and the tunnel's rate and totals.">
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="head">
+      <h2>It used to be two shell scripts.</h2>
+      <p>And a password every time I wanted the VPN off.</p>
+    </div>
+    <figure class="diff" aria-label="What Priel replaced, as a diff">
+      <figcaption class="diff__file"><span>--- a/scripts/vpn-*.sh</span><span>+++ b/Priel.app</span></figcaption>
+      <ol>
+        <li class="del"><span class="sign">-</span><code>sudo launchctl bootstrap system io.juist.juistd.plist</code></li>
+        <li class="del"><span class="sign">-</span><code>sudo launchctl bootout system/io.juist.juistd</code></li>
+        <li class="del"><span class="sign">-</span><code>juist status   # is it even up?</code></li>
+        <li class="add"><span class="sign">+</span><span>a switch; one admin prompt, the first time</span></li>
+        <li class="add"><span class="sign">+</span><span>every device: direct or relayed, handshake, ms</span></li>
+        <li class="add"><span class="sign">+</span><span>join with the code from juist invite</span></li>
+      </ol>
+    </figure>
+  </div>
+</section>
+
+<section class="section" id="window">
+  <div class="container">
+    <div class="head head--stack">
+      <h2>What the window shows</h2>
+      <p>Everything comes from juistd’s own socket.</p>
+    </div>
+    <div class="switch" data-switch>
+      <div class="tabs" role="tablist" aria-label="Window states">
+        <button type="button" role="tab" id="t1" aria-controls="p1" aria-selected="true">Connected</button>
+        <button type="button" role="tab" id="t2" aria-controls="p2" aria-selected="false" tabindex="-1">Not the operator</button>
+        <button type="button" role="tab" id="t3" aria-controls="p3" aria-selected="false" tabindex="-1">Fresh Mac</button>
+      </div>
+      <div class="panel" role="tabpanel" id="p1" aria-labelledby="t1">
+        <figure class="shot" data-slot="state-connected" data-kind="product" data-alt="The window with several devices"><img src="img/window-several.png" width="680" height="662" loading="lazy" alt="Priel's window with three devices: gate reached directly at 4 ms, nas through gate's relay at 31 ms, pi offline."></figure>
+        <div>
+          <h3>Direct, relayed, gone</h3>
+          <p>Relayed devices name their relay. Offline ones just say offline. A juist subnet you’re already on shows as not in use, so your LAN keeps working.</p>
+        </div>
+      </div>
+      <div class="panel" role="tabpanel" id="p2" aria-labelledby="t2">
+        <figure class="shot" data-slot="state-reader" data-kind="product" data-alt="The window as a user who is not the operator"><img src="img/window-reader.png" width="680" height="604" loading="lazy" alt="Priel's window showing the device as member 1, no latency, and a Become Operator button."></figure>
+        <div>
+          <h3>Member 1, no ping</h3>
+          <p>juistd hides names from users who aren’t its operator. Become Operator asks for your password once and fixes it.</p>
+        </div>
+      </div>
+      <div class="panel" role="tabpanel" id="p3" aria-labelledby="t3">
+        <figure class="shot" data-slot="state-join" data-kind="product" data-alt="The window on a Mac in no network yet"><img src="img/window-join.png" width="680" height="402" loading="lazy" alt="Priel's window with an invite code field and a Join button."></figure>
+        <div>
+          <h3>Paste the invite code</h3>
+          <p>Run juist invite on any member, paste the code here. You also become this Mac’s operator.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="head head--stack">
+      <h2>What runs where</h2>
+      <p>Turning it off unregisters the daemon. It stays off across reboots.</p>
+    </div>
+    <table class="where">
+      <thead><tr><th scope="col">Thing</th><th scope="col">What it is</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">juistd</th><td>Runs as root from inside Priel.app, kept alive by launchd, up before login.</td></tr>
+        <tr><th scope="row">/var/db/juist</th><td>Keys and membership. Kept through off, upgrades and deleting the app.</td></tr>
+        <tr><th scope="row">/etc/priel/juistd.flags</th><td>Extra juistd flags, say <code>--no-dht --no-stun</code>. Root-owned or it’s ignored.</td></tr>
+        <tr><th scope="row"><a class="link" href="https://github.com/0x23me/priel/blob/main/mac/juist/macos.patch">macos.patch</a></th><td>The two changes to juist this needs. Read it, it’s short.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section section--paper" id="opnsense">
+  <div class="container">
+    <div class="head">
+      <h2>The firewall end</h2>
+      <p>As root on the firewall.</p>
+    </div>
+    <div class="fw">
+      <div class="well">
+        <div class="well__bar"><span>root@opnsense</span><span>FreeBSD 15, amd64</span></div>
+        <div class="cmd">
+          <div><code><span class="p">$ </span>pkg add <span class="arg">https://github.com/nning/juist/releases/download/v0.27.1/juist-freebsd15-amd64.pkg</span></code></div>
+          <button class="copy" type="button" aria-label="Copy the juist install command" data-copy="pkg add https://github.com/nning/juist/releases/download/v0.27.1/juist-freebsd15-amd64.pkg"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button>
+        </div>
+        <div class="cmd">
+          <div><code><span class="p">$ </span>pkg add <span class="arg">https://github.com/0x23me/priel/releases/latest/download/os-juist-0.1-FreeBSD-15-amd64.pkg</span></code><small>FreeBSD 14 box: take the FreeBSD-14 one.</small></div>
+          <button class="copy" type="button" aria-label="Copy the plugin install command" data-copy="pkg add https://github.com/0x23me/priel/releases/latest/download/os-juist-0.1-FreeBSD-15-amd64.pkg"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button>
+        </div>
+      </div>
+      <dl>
+        <div><dt>VPN › juist</dt><dd>Service, ports, relay.</dd></div>
+        <div><dt>A juist interface group</dt><dd>Rules go on it, as for any VPN.</dd></div>
+        <div><dt>Invites from the GUI</dt><dd>Needs an admin key on the firewall.</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="close">
+  <div class="container">
+    <div class="close__text">
+      <h2>Early, and unofficial.</h2>
+      <p>It runs on one Mac and one firewall so far. Not made by juist’s author, so file bugs with Priel, not juist.</p>
+    </div>
+    <div class="actions">
+      <a class="btn" href="https://github.com/0x23me/priel/releases/latest">Download for macOS</a>
+      <a class="btn btn--line" href="https://github.com/0x23me/priel/issues">Open an issue</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="foot">
+  <div class="container">
+    <div>
+      <p>A priel is a tidal channel through the mud flats, the kind that runs around Juist at low tide.</p>
+      <p>BSD-3-Clause. juist is by henning mueller. macOS 14 or later, Apple silicon and Intel.</p>
+    </div>
+    <nav aria-label="Priel">
+      <h2>Priel</h2>
+      <ul>
+        <li><a class="link" href="https://github.com/0x23me/priel/releases">Releases</a></li>
+        <li><a class="link" href="https://github.com/0x23me/priel">Source</a></li>
+        <li><a class="link" href="https://github.com/0x23me/priel/issues">Issues</a></li>
+      </ul>
+    </nav>
+    <nav aria-label="juist">
+      <h2>juist</h2>
+      <ul>
+        <li><a class="link" href="https://github.com/nning/juist">Repository</a></li>
+        <li><a class="link" href="https://juist.nning.io/">Website</a></li>
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+<script>
+// The channel, printed in juistd's status text: resolves row by row once, flares under the cursor.
+(() => {
+  const rows = {{ROWS}};
+  const text = 'lab connected laptop-01 198.18.68.2 fd12:3456:789a:20fc gate direct 4ms handshake 58s ago 10.99.0.0/16 via gate not in use relay voucher routes udp/41643 schema 22 '.replace(/\s/g, '');
+  const art = document.querySelector('.art'), canvas = art.querySelector('canvas'), ctx = canvas.getContext('2d');
+  const win = art.querySelector('.window');
+  let hole = null;
+  const css = getComputedStyle(document.documentElement);
+  const tones = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => css.getPropertyValue(`--glyph-${i}`).trim());
+  const accent = css.getPropertyValue('--color-accent').trim();
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let shown = still ? rows.length : 0, pointer = null, w = 0, h = 0, cw = 0, ch = 0;
+  const size = () => {
+    const r = art.getBoundingClientRect(), d = devicePixelRatio || 1;
+    w = r.width; h = r.height; canvas.width = w * d; canvas.height = h * d; ctx.setTransform(d, 0, 0, d, 0, 0);
+    cw = w / rows[0].length; ch = h / rows.length;
+    // Leave a cell of air around the window, so no glyph is cut by its edge.
+    const q = win.getBoundingClientRect();
+    hole = { l: q.left - r.left - cw, t: q.top - r.top - ch, r: q.right - r.left + cw, b: q.bottom - r.top + ch };
+  };
+  const draw = () => {
+    ctx.clearRect(0, 0, w, h);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    let k = 0;
+    for (let y = 0; y < shown; y++) {
+      for (let x = 0; x < rows[y].length; x++) {
+        const level = +rows[y][x];
+        if (!level) continue;
+        const cx = (x + 0.5) * cw, cy = (y + 0.5) * ch;
+        if (cx > hole.l && cx < hole.r && cy > hole.t && cy < hole.b) continue;
+        const near = pointer && Math.hypot(cx - pointer.x, cy - pointer.y) < 60;
+        const dim = level <= 4;
+        ctx.font = `${Math.round(ch * (dim ? 0.62 : 1) * 0.9)}px ${css.getPropertyValue('--font-display')}`;
+        ctx.fillStyle = near ? accent : tones[Math.min(7, level - 1)];
+        ctx.fillText(text[k++ % text.length], cx, cy);
+      }
+    }
+  };
+  size();
+  if (still) draw();
+  else {
+    const start = performance.now();
+    const step = (t) => { shown = Math.min(rows.length, Math.ceil((t - start) / 1500 * rows.length)); draw(); if (shown < rows.length) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+    art.addEventListener('pointermove', (e) => { const r = art.getBoundingClientRect(); pointer = { x: e.clientX - r.left, y: e.clientY - r.top }; requestAnimationFrame(draw); });
+    art.addEventListener('pointerleave', () => { pointer = null; requestAnimationFrame(draw); });
+  }
+  new ResizeObserver(() => { size(); draw(); }).observe(art);
+})();
+
+// Tabs: arrow keys move between them; without script every panel shows.
+document.querySelectorAll('[data-switch]').forEach((root) => {
+  const tabs = [...root.querySelectorAll('[role="tab"]')];
+  const pick = (tab) => tabs.forEach((t) => {
+    const on = t === tab;
+    t.setAttribute('aria-selected', on); t.tabIndex = on ? 0 : -1;
+    document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+  });
+  pick(tabs[0]);
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => pick(t));
+    t.addEventListener('keydown', (e) => {
+      const j = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : null;
+      if (j === null) return;
+      const next = tabs[(j + tabs.length) % tabs.length]; pick(next); next.focus();
+    });
+  });
+});
+
+// Copy buttons: the icon turns into a tick for 1.4 s.
+document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', () => {
+  navigator.clipboard.writeText(b.dataset.copy).then(() => { b.classList.add('is-done'); setTimeout(() => b.classList.remove('is-done'), 1400); });
+}));
+</script>
+<script>window.hallmarkSlots = (m) => { for (const [k, v] of Object.entries(m)) { const s = document.querySelector(`[data-slot="${k}"]`); if (!s) continue; const im = new Image(); im.src = typeof v === 'string' ? v : v.src; im.alt = (typeof v === 'object' && v.alt) || s.dataset.alt || ''; s.querySelectorAll(':scope > img').forEach((o) => o.remove()); s.prepend(im); } };
+document.querySelectorAll('[data-slot] img').forEach((i) => { if (i.complete && !i.naturalWidth) i.remove(); else i.addEventListener('error', () => i.remove(), { once: true }); });</script>
+</body>
+</html>

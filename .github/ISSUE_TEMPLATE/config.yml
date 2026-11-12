@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: juist itself
+    url: https://github.com/nning/juist/issues
+    about: Problems with juist that also happen without Priel belong to juist.

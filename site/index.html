@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Priel, juist for the Mac and OPNsense</title>
+<meta name="description" content="A macOS menu bar app and an OPNsense plugin for juist, the peer-to-peer WireGuard mesh VPN.">
+<link rel="icon" href="img/icon-256.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wdth,wght@75..112.5,400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="container">
+    <a class="mark" href="./" aria-label="Priel, home"><img src="img/icon-256.png" width="28" height="28" alt="">priel</a>
+    <ul>
+      <li><a href="#window">The window</a></li>
+      <li><a href="#opnsense">OPNsense</a></li>
+      <li><a href="https://github.com/0x23me/priel">Source</a></li>
+      <li><a class="btn" href="https://github.com/0x23me/priel/releases/latest">Download</a></li>
+    </ul>
+  </div>
+</header>
+
+<main id="main">
+<section class="hero">
+  <div class="container">
+    <div class="hero__text">
+      <h1>juist, with a switch.</h1>
+      <p class="lead">A juist menu bar app for the Mac, and an OPNsense plugin.</p>
+      <div class="actions">
+        <a class="btn" href="https://github.com/0x23me/priel/releases/latest">Download for macOS</a>
+        <a class="btn btn--line" href="#opnsense">The OPNsense plugin</a>
+      </div>
+    </div>
+    <div class="art">
+      <pre aria-hidden="true">l         a   b   c    o nn e      c t       e        d       l      a p   t  o  p            -  01  198
+                 .        1   8.  68            .     2          g a      t         ed   i       rect4ms
+    h    an          ds              h    a    k   e5  8 s         a        g                  o10.99.0.
+  0 /1  6       v           i        ag   a   t           e               la           b  c onnectedlapt
+op - 0  1 1  98 .   1 8            .                  6  8     .               2g         atedirect4msha
+   n                       d  s  ha        k e 5 8sa g    o 1      0 . 99     . 0.  0 / 16viagatelabconn
+ e c            t      e d  l     ap     t     op- 0                   1198.18        .68.2gatedirect4ms
+       h   a    n  d    sh    a ke    5     8    s  ag o   10   .     9  9           .0.0/16viagatelabco
+    n    n          e   c                te   d l  a    p    t             o      p-01198.18.68.2gatedir
+     ec   t  4            ms             h     an ds        h a            k   e 58sago10.99.0.0/16viaga
+         t          el  a       b c o   nnec   t         e  d  l     a  pt   o  p-01198.18.68.2gatedirec
+ t          4     m         s      h   a   n d   sh  a               k     e   58sago10.99.0.0/16viagate
+    l       a b   c   onn           e c     t     e    dla              p    top-01198.18.68.2gatedirect
+      4m     shan        d        s        h      a k    e              5 8 sago10.99.0.0/16viagatelabco
+     n  n   ec        t               e           d  l     a p             top-01198.18.68.2gatedirect4
+   m   s  h      a      n   d                   s     h  a      k      e  58sago10.99.0.0/16viagatela
+         b        c    o   n      n  e  c         t     e  d    l     aptop-01198.18.68.2gatedirect4
+ m        sh  a          n             d  s               h      ak  e 58sago10.99.0.0/16viagatela b
+   con n   e          c  t   e  d l a  p   to   p -0    11      9     8.18.68.2gatedirect4mshands  h  a
+k  e58   sa  go     1 0    .        9    9 .   0.     0     /16     viagatelabconnectedlaptop-01      1
+   9 8            .     1             8       .  6    8   .2       gatedirect4mshandshake58sag    o
+1  0  .9     9        . 0  .    0    / 1 6         v   i a    g   atelabconnectedlaptop-01198  .    1
+    8              .   6  8    .2       g a t    e d     i r e  ct4mshandshake58sago10.99.0.0 /   1   6
+  v              i        a       g  a            te    l    abconnectedlaptop-01198.18.68          . 2
+ga   t  e   d              i          r e   c                t4mshandshake58sago10.99.0.0       /   1
+ 6   v          ia   g            a t     elab        c    onnectedlaptop-01198.18.68.2ga t   e     d  i
+ r              e       c t     4mshandshake58sago10.9 9.0.0/16viagatelabconnectedlapt o  p          - 0
+             1  19 8     .1 8.68.2gatedirect4mshandshake58sago10.99.0.0/16viagatelabc      o         n
+     n       e    c      tedlaptop-01198.18.68.2gatedirect4mshandshake58sago10.99.0.                  0/
+16         v           iagatelabconnectedlaptop-01198.18.68.2gatedirect4mshandshak e     5 8   s
+         a g        o10.99.0.0/16viagatelabconnectedlaptop-01198.18.68.2gatedirec  t4      msh  an
+d   s        h    ake58sago10.99.0.0/16viagatelabconnectedlaptop-01198.18.68.2gated  i    r  ec    t   4
+     msh        andshake58sago10.99.0.0/16viagatelabconnectedlaptop-01198.18. 6           8.    2
+     ga     t edirect4mshandshake58sago10.99.0.0/16viagatelabconnectedlapto     p          -  01   1 98.
+   18     . 68.2gatedirect4mshandshake58sago10.99.0.0/16viagatelabconnect      e      d              l
+a  p t  o  p-01198.18.68.2gatedirect4mshandshake58sago10.99.0.0/16viaga          t   e    l       a    b
+  co n   nectedlaptop-01198.18.68.2gatedirect4mshandshake58sago10.9         9 .    0.0       /    1  6
+    v  iagatelabconnectedlaptop-01198.18  . 68.2gatedirect4msha  n  ds  h   a              k         e
+5    8sago10.99.0.0/16viagatelabconne       c  t e          d       l ap to p-0           1   1
+9  8.18.68.2gatedirect4mshandshake5   8       s   a g  o  1    0 .    9              9   .        0    .
+0/16viagatelabconnectedlaptop-011                 9        8       .1  8        .6             8  .2 ga
+tedirect4mshandshake58sago10.99.0     .0/        1             6      v              ia  ga t   e   l
+abconnectedlaptop-01198.18.68.          2   ga    t    e d  i          r e    ct  4m   sha nd     s
+hake58sago10.99.0.0/16viaga   t e                   l a  b c   on nec         t  e  dl  a    pt     o p
+-01198.18.68.2gatedirect4m  sh a  n       d   s h  a   k e                     5  8  s
+ago10.99.0.0/16viagatel  a     b       co  n      n                           e          c ted   l
+aptop-01198.18.68.2ga            t    ed              i                  re        c   t             4m
+shandshake58sago10.       9            9 .    0  .0           /   1        6 v i    aga        t
+elabconnectedlapto       p                -0  1  1  9    8.  1             8   . 6  8 . 2    ga      t
+edirect4mshand s  h      a      k      e        5  8s    a    g    o1 0  .9  9    .           0.0
+/16viagatel a     b c            o             n n  e      c           te    d   l       a         p  t
+op-01198  .18 .   6      8       .  2     g   ated     i     r e   c t       4    m    sh a          nd
+sha  k e      5 8s ag     o     1     0         .           9  9    .                   0.     0  / 1 6
+     vi  ag       a te l a     b  c     on  ne  c te d                     l  a     p    t      o   p-0</pre>
+      <canvas aria-hidden="true"></canvas>
+      <figure class="window" data-slot="window" data-kind="product" data-alt="Priel's window, connected, one device reached directly">
+        <img src="img/window-connected.png" width="680" height="536" fetchpriority="high" alt="Priel's window: the switch on, this Mac's addresses, the network lab connected, the device gate reached directly at 4 ms with its last handshake and bytes each way, a subnet not in use because this Mac is inside it, and the tunnel's rate and totals.">
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="head">
+      <h2>It used to be two shell scripts.</h2>
+      <p>And a password every time I wanted the VPN off.</p>
+    </div>
+    <figure class="diff" aria-label="What Priel replaced, as a diff">
+      <figcaption class="diff__file"><span>--- a/scripts/vpn-*.sh</span><span>+++ b/Priel.app</span></figcaption>
+      <ol>
+        <li class="del"><span class="sign">-</span><code>sudo launchctl bootstrap system io.juist.juistd.plist</code></li>
+        <li class="del"><span class="sign">-</span><code>sudo launchctl bootout system/io.juist.juistd</code></li>
+        <li class="del"><span class="sign">-</span><code>juist status   # is it even up?</code></li>
+        <li class="add"><span class="sign">+</span><span>a switch; one admin prompt, the first time</span></li>
+        <li class="add"><span class="sign">+</span><span>every device: direct or relayed, handshake, ms</span></li>
+        <li class="add"><span class="sign">+</span><span>join with the code from juist invite</span></li>
+      </ol>
+    </figure>
+  </div>
+</section>
+
+<section class="section" id="window">
+  <div class="container">
+    <div class="head head--stack">
+      <h2>What the window shows</h2>
+      <p>Everything comes from juistd’s own socket.</p>
+    </div>
+    <div class="switch" data-switch>
+      <div class="tabs" role="tablist" aria-label="Window states">
+        <button type="button" role="tab" id="t1" aria-controls="p1" aria-selected="true">Connected</button>
+        <button type="button" role="tab" id="t2" aria-controls="p2" aria-selected="false" tabindex="-1">Not the operator</button>
+        <button type="button" role="tab" id="t3" aria-controls="p3" aria-selected="false" tabindex="-1">Fresh Mac</button>
+      </div>
+      <div class="panel" role="tabpanel" id="p1" aria-labelledby="t1">
+        <figure class="shot" data-slot="state-connected" data-kind="product" data-alt="The window with several devices"><img src="img/window-several.png" width="680" height="662" loading="lazy" alt="Priel's window with three devices: gate reached directly at 4 ms, nas through gate's relay at 31 ms, pi offline."></figure>
+        <div>
+          <h3>Direct, relayed, gone</h3>
+          <p>Relayed devices name their relay. Offline ones just say offline. A juist subnet you’re already on shows as not in use, so your LAN keeps working.</p>
+        </div>
+      </div>
+      <div class="panel" role="tabpanel" id="p2" aria-labelledby="t2">
+        <figure class="shot" data-slot="state-reader" data-kind="product" data-alt="The window as a user who is not the operator"><img src="img/window-reader.png" width="680" height="604" loading="lazy" alt="Priel's window showing the device as member 1, no latency, and a Become Operator button."></figure>
+        <div>
+          <h3>Member 1, no ping</h3>
+          <p>juistd hides names from users who aren’t its operator. Become Operator asks for your password once and fixes it.</p>
+        </div>
+      </div>
+      <div class="panel" role="tabpanel" id="p3" aria-labelledby="t3">
+        <figure class="shot" data-slot="state-join" data-kind="product" data-alt="The window on a Mac in no network yet"><img src="img/window-join.png" width="680" height="402" loading="lazy" alt="Priel's window with an invite code field and a Join button."></figure>
+        <div>
+          <h3>Paste the invite code</h3>
+          <p>Run juist invite on any member, paste the code here. You also become this Mac’s operator.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="head head--stack">
+      <h2>What runs where</h2>
+      <p>Turning it off unregisters the daemon. It stays off across reboots.</p>
+    </div>
+    <table class="where">
+      <thead><tr><th scope="col">Thing</th><th scope="col">What it is</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">juistd</th><td>Runs as root from inside Priel.app, kept alive by launchd, up before login.</td></tr>
+        <tr><th scope="row">/var/db/juist</th><td>Keys and membership. Kept through off, upgrades and deleting the app.</td></tr>
+        <tr><th scope="row">/etc/priel/juistd.flags</th><td>Extra juistd flags, say <code>--no-dht --no-stun</code>. Root-owned or it’s ignored.</td></tr>
+        <tr><th scope="row"><a class="link" href="https://github.com/0x23me/priel/blob/main/mac/juist/macos.patch">macos.patch</a></th><td>The two changes to juist this needs. Read it, it’s short.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section section--paper" id="opnsense">
+  <div class="container">
+    <div class="head">
+      <h2>The firewall end</h2>
+      <p>As root on the firewall.</p>
+    </div>
+    <div class="fw">
+      <div class="well">
+        <div class="well__bar"><span>root@opnsense</span><span>FreeBSD 15, amd64</span></div>
+        <div class="cmd">
+          <div><code><span class="p">$ </span>pkg add <span class="arg">https://github.com/nning/juist/releases/download/v0.27.1/juist-freebsd15-amd64.pkg</span></code></div>
+          <button class="copy" type="button" aria-label="Copy the juist install command" data-copy="pkg add https://github.com/nning/juist/releases/download/v0.27.1/juist-freebsd15-amd64.pkg"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button>
+        </div>
+        <div class="cmd">
+          <div><code><span class="p">$ </span>pkg add <span class="arg">https://github.com/0x23me/priel/releases/latest/download/os-juist-0.1-FreeBSD-15-amd64.pkg</span></code><small>FreeBSD 14 box: take the FreeBSD-14 one.</small></div>
+          <button class="copy" type="button" aria-label="Copy the plugin install command" data-copy="pkg add https://github.com/0x23me/priel/releases/latest/download/os-juist-0.1-FreeBSD-15-amd64.pkg"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button>
+        </div>
+      </div>
+      <dl>
+        <div><dt>VPN › juist</dt><dd>Service, ports, relay.</dd></div>
+        <div><dt>A juist interface group</dt><dd>Rules go on it, as for any VPN.</dd></div>
+        <div><dt>Invites from the GUI</dt><dd>Needs an admin key on the firewall.</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="close">
+  <div class="container">
+    <div class="close__text">
+      <h2>Early, and unofficial.</h2>
+      <p>It runs on one Mac and one firewall so far. Not made by juist’s author, so file bugs with Priel, not juist.</p>
+    </div>
+    <div class="actions">
+      <a class="btn" href="https://github.com/0x23me/priel/releases/latest">Download for macOS</a>
+      <a class="btn btn--line" href="https://github.com/0x23me/priel/issues">Open an issue</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="foot">
+  <div class="container">
+    <div>
+      <p>A priel is a tidal channel through the mud flats, the kind that runs around Juist at low tide.</p>
+      <p>BSD-3-Clause. juist is by henning mueller. macOS 14 or later, Apple silicon and Intel.</p>
+    </div>
+    <nav aria-label="Priel">
+      <h2>Priel</h2>
+      <ul>
+        <li><a class="link" href="https://github.com/0x23me/priel/releases">Releases</a></li>
+        <li><a class="link" href="https://github.com/0x23me/priel">Source</a></li>
+        <li><a class="link" href="https://github.com/0x23me/priel/issues">Issues</a></li>
+      </ul>
+    </nav>
+    <nav aria-label="juist">
+      <h2>juist</h2>
+      <ul>
+        <li><a class="link" href="https://github.com/nning/juist">Repository</a></li>
+        <li><a class="link" href="https://juist.nning.io/">Website</a></li>
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+<script>
+// The channel, printed in juistd's status text: resolves row by row once, flares under the cursor.
+(() => {
+  const rows = ["10000000001000100010000101101000000101000000010000000010000000100000010100010010010000000000001001100444", "00000000000000000100000000100011001100000000000010000010000000000101000000100000000011000100000004444444", "00001000011000000000011000000000000001000010000100011001010000000001000000001000000000000000000444444444", "00101100100000001000000000001000000001100010001000000000001000000000000000110000000000010010444444444444", "11010100101001101000101000000000000100000000000000000010010000010000000000000001100000000044444444444888", "00010000000000000000000000010010011000000001010101110100001010000001010110000010110010104444444444488888", "01010000000000001000000101001000001100000100000111010000000000000000000111111100000000444444444488888888", "00000001000100001001000011000010110000100000100001001101000110001000001001000000000004444444448888888888", "00001000010000000000100010000000000000000110001010010000100001000000000000010000001444444444488888888888", "00000110001001000000000000110000000000000100000110110000000010100000000000010001024444444448888888888844", "00000000010000000000110010000000101010001111000100000000010010010000010011000100444444444888888888884444", "01000000000010000010000000001000000100010001010001100100000000000000010000010004444444458888888888444444", "00001000000010100010001110000000000010100000100000100001110000000000000010000344444444888888888884444444", "00000011000001111000000001000000001000000001000000101000010000000000000010104444444448888888888444444444", "00000100100011000000001000000000000000100000000000100100000101000000000000044444444888888888884444444440", "00010001001000000100000010001000000000000000000010000010010000001000000100444444448888888888444444444000", "00000000010000000010000100010000001001001000000000100000100100001000001144444444488888888884444444440000", "01000000001100100000000001000000000000010010000000000000001000000110010444444445888888888544444444010000", "00011101000100000000001001000100101010010001100010110000110000001000004444444488888888884444444440010010", "10011100011001100000101000010000000010000101000110000010000011100000444444444888888888844444444300000010", "00010100000000000010000010000000000000100000001001000010001100000004444444448888888888444444440000100000", "10010011000001000000001010010000100001010100000000010001010000100044444444888888888844444444400100001000", "00001000000000000001000100100001100000001010100001010000010101004444444448888888888444444444101000100010", "00100000000000000100000000100000001001000000000000110000100001344444444488888888884444444400000000001010", "11000100100010000000000000010000000000101000100000000000000004444444448888888888544444444000000010001000", "01000100000000001100010000000000001010000033110000000010000444444444488888888884444444441010001000001001", "01000000000000001000000010100000444444444444444444444404444444444448888888888844444444010010000000000101", "00000000000001001101000001104444444444444444444444444444444444444888888888884444444440000001000000000100", "00000100000001000010000004444444444444444444444444444444444444488888888888844444444400000000000000000011", "11000000000100000000000444444444444446888888888864444444444488888888888884444444440100000101000100000000", "00000000010100000000444444444444588888888888888888888888888888888888888444444444400110000001110011000000", "10001000000001000044444444444888888888888888888888888888888888888888844444444441111001000010011000010001", "00000111000000004444444444488888888888888888888888888888888888888864444444444010000000000011000010000000", "00000110000010444444444478888888888888888444488888888888888888844444444444400000100000000001001100010111", "00011000001044444444447888888888888844444444444444444676444444444444444440000001000000100000000000000100", "10010100100444444444488888888888844444444444444444444444444444444444444000000000010001000010000000100001", "00110100044444444448888888888844444444444444444444444444444444444440000000001010000111000000010000100100", "00001004444444444888888888884444444444440010114444444444444444400100110010001000000000000001000000000100", "10000444444444488888888888444444444440000000100101000000000010000000101101101110000000000010001000000000", "10044444444448888888888884444444444000100000001000101001001000010100001000000000000001000100000000100001", "44444444444888888888888444444444300000000000000000100000000100000001100100000000110000000000000100110110", "44444444488888888888844444444441100000111000000001000000000000010000001000000000000001100110100010001000", "44444448888888888884444444444100000000001000110000100001010010000000000101000011001100011101100000100000", "44448888888888888444444444400010100000000000000000001010010100011011100000000010010011001000011000001010", "88888888888888844444444441001101001000000010001010010001010000000000000000000001001001000000000000000000", "88888888888884444444444001000001000000011001000000100000000000000000000000000010000000000101110001000000", "88888888884444444444400000000000010000110000000000000010000000000000000001100000000100010000000000000110", "88888884444444444440000000100000000000010100001001100000000000100010000000010101000011100000000100000000", "88844444444444444100000001000000000000000011001001001000011001000000000000010001010010101000011000000100", "44444444444444010010000001000000100000010000000010011000010000100001101001100100001000000000001110000000", "44444444444010000010100000000000010000000000000101001000000100000000000110000100010000000100000000010010", "44444444001110100010000001000000010010000010001111000001000001010001010000000100001000011010000000000110", "44400101000000101101100000100000100000100000000010000000000010010000100000000000000000001100000100101010", "00000110011000000010110101000001001000001100110010110100000000000000000000010010000010000100000010001110"];
+  const text = 'lab connected laptop-01 198.18.68.2 fd12:3456:789a:20fc gate direct 4ms handshake 58s ago 10.99.0.0/16 via gate not in use relay voucher routes udp/41643 schema 22 '.replace(/\s/g, '');
+  const art = document.querySelector('.art'), canvas = art.querySelector('canvas'), ctx = canvas.getContext('2d');
+  const win = art.querySelector('.window');
+  let hole = null;
+  const css = getComputedStyle(document.documentElement);
+  const tones = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => css.getPropertyValue(`--glyph-${i}`).trim());
+  const accent = css.getPropertyValue('--color-accent').trim();
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let shown = still ? rows.length : 0, pointer = null, w = 0, h = 0, cw = 0, ch = 0;
+  const size = () => {
+    const r = art.getBoundingClientRect(), d = devicePixelRatio || 1;
+    w = r.width; h = r.height; canvas.width = w * d; canvas.height = h * d; ctx.setTransform(d, 0, 0, d, 0, 0);
+    cw = w / rows[0].length; ch = h / rows.length;
+    // Leave a cell of air around the window, so no glyph is cut by its edge.
+    const q = win.getBoundingClientRect();
+    hole = { l: q.left - r.left - cw, t: q.top - r.top - ch, r: q.right - r.left + cw, b: q.bottom - r.top + ch };
+  };
+  const draw = () => {
+    ctx.clearRect(0, 0, w, h);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    let k = 0;
+    for (let y = 0; y < shown; y++) {
+      for (let x = 0; x < rows[y].length; x++) {
+        const level = +rows[y][x];
+        if (!level) continue;
+        const cx = (x + 0.5) * cw, cy = (y + 0.5) * ch;
+        if (cx > hole.l && cx < hole.r && cy > hole.t && cy < hole.b) continue;
+        const near = pointer && Math.hypot(cx - pointer.x, cy - pointer.y) < 60;
+        const dim = level <= 4;
+        ctx.font = `${Math.round(ch * (dim ? 0.62 : 1) * 0.9)}px ${css.getPropertyValue('--font-display')}`;
+        ctx.fillStyle = near ? accent : tones[Math.min(7, level - 1)];
+        ctx.fillText(text[k++ % text.length], cx, cy);
+      }
+    }
+  };
+  size();
+  if (still) draw();
+  else {
+    const start = performance.now();
+    const step = (t) => { shown = Math.min(rows.length, Math.ceil((t - start) / 1500 * rows.length)); draw(); if (shown < rows.length) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+    art.addEventListener('pointermove', (e) => { const r = art.getBoundingClientRect(); pointer = { x: e.clientX - r.left, y: e.clientY - r.top }; requestAnimationFrame(draw); });
+    art.addEventListener('pointerleave', () => { pointer = null; requestAnimationFrame(draw); });
+  }
+  new ResizeObserver(() => { size(); draw(); }).observe(art);
+})();
+
+// Tabs: arrow keys move between them; without script every panel shows.
+document.querySelectorAll('[data-switch]').forEach((root) => {
+  const tabs = [...root.querySelectorAll('[role="tab"]')];
+  const pick = (tab) => tabs.forEach((t) => {
+    const on = t === tab;
+    t.setAttribute('aria-selected', on); t.tabIndex = on ? 0 : -1;
+    document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+  });
+  pick(tabs[0]);
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => pick(t));
+    t.addEventListener('keydown', (e) => {
+      const j = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : null;
+      if (j === null) return;
+      const next = tabs[(j + tabs.length) % tabs.length]; pick(next); next.focus();
+    });
+  });
+});
+
+// Copy buttons: the icon turns into a tick for 1.4 s.
+document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', () => {
+  navigator.clipboard.writeText(b.dataset.copy).then(() => { b.classList.add('is-done'); setTimeout(() => b.classList.remove('is-done'), 1400); });
+}));
+</script>
+<script>window.hallmarkSlots = (m) => { for (const [k, v] of Object.entries(m)) { const s = document.querySelector(`[data-slot="${k}"]`); if (!s) continue; const im = new Image(); im.src = typeof v === 'string' ? v : v.src; im.alt = (typeof v === 'object' && v.alt) || s.dataset.alt || ''; s.querySelectorAll(':scope > img').forEach((o) => o.remove()); s.prepend(im); } };
+document.querySelectorAll('[data-slot] img').forEach((i) => { if (i.complete && !i.naturalWidth) i.remove(); else i.addEventListener('error', () => i.remove(), { once: true }); });</script>
+</body>
+</html>

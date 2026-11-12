@@ -1,0 +1,42 @@
+<model>
+    <mount>//OPNsense/juist/settings</mount>
+    <description>juist settings</description>
+    <version>0.1.0</version>
+    <items>
+        <enabled type="BooleanField">
+            <Default>0</Default>
+            <Required>Y</Required>
+        </enabled>
+        <port type="PortField">
+            <Default>41643</Default>
+            <Required>Y</Required>
+        </port>
+        <relay type="BooleanField">
+            <Default>0</Default>
+            <Required>Y</Required>
+        </relay>
+        <relayPort type="PortField">
+            <Default>41645</Default>
+            <Required>Y</Required>
+        </relayPort>
+        <openPorts type="BooleanField">
+            <Default>1</Default>
+            <Required>Y</Required>
+        </openPorts>
+        <interfaces type="InterfaceField">
+            <Multiple>Y</Multiple>
+        </interfaces>
+        <dht type="BooleanField">
+            <Default>1</Default>
+            <Required>Y</Required>
+        </dht>
+        <stun type="BooleanField">
+            <Default>1</Default>
+            <Required>Y</Required>
+        </stun>
+        <admin type="BooleanField">
+            <Default>0</Default>
+            <Required>Y</Required>
+        </admin>
+    </items>
+</model>

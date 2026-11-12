@@ -1,0 +1,17 @@
+juist is a peer-to-peer mesh VPN with no coordination server. WireGuard
+carries the traffic, and who belongs to the network is a log signed by
+its admins.
+
+This plugin runs juistd on the firewall, has the ruleset call juist's pf
+anchors, opens its ports, shows the network's devices, and can hold an
+admin key to invite and remove devices from the GUI.
+
+The juist package itself comes from juist's own repository and is not a
+dependency of this plugin: https://github.com/nning/juist
+
+Plugin Changelog
+================
+
+0.1
+
+* initial version: service, anchors, ports, status, invites

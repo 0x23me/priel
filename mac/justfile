@@ -1,0 +1,44 @@
+# Priel: juist in the macOS menu bar. Run `just` to list recipes.
+
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+default:
+    @just --list
+
+# Build all products (debug)
+build:
+    swift build
+
+# Run unit tests
+test:
+    swift test
+
+# Build juist with the macOS patch if needed, then build and sign .build/Priel.app
+bundle:
+    ./Scripts/bundle.sh
+
+# Bundle, then start the app (quits a running copy first)
+run: bundle
+    pkill -x Priel || true
+    open .build/Priel.app
+
+# Save juistd's status answer as a test fixture: just capture NAME [--figures]
+capture name *flags:
+    ./Scripts/capture-status.py {{name}} {{flags}}
+
+# The daemon runs from the installed copy, so this is how an upgrade lands; a running juistd
+# keeps the old binary until it restarts.
+# Bundle, then replace /Applications/Priel.app and start it
+install: bundle
+    pkill -x Priel || true
+    rm -rf /Applications/Priel.app
+    ditto .build/Priel.app /Applications/Priel.app
+    open /Applications/Priel.app
+
+# Build, sign and notarize a release into dist/: just release 0.1.0
+release version:
+    ./Scripts/release.sh {{version}}
+
+# Redraw Resources/AppIcon.icns
+icon:
+    swift Scripts/icon.swift
