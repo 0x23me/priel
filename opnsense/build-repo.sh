@@ -5,8 +5,9 @@
 #   sh build-repo.sh OUT KEY
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
-out=$1
-key=$2
+mkdir -p "$1"
+out=$(cd "$1" && pwd)
+key=$(cd "$(dirname "$2")" && pwd)/$(basename "$2")
 sh "$here/build-pkg.sh" >/dev/null
 for pkg in "$here"/dist/os-juist-*.pkg; do
 	abi=$(basename "$pkg" .pkg | sed 's/^os-juist-[^-]*-//; s/-/:/g')
