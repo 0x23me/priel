@@ -1,0 +1,86 @@
+#!/bin/sh
+# Priel's LaunchDaemon (me.0x23.priel.juistd), run by launchd as root from the root-owned copy in
+# /Library/PrivilegedHelperTools/me.0x23.priel, never from the app: anything root runs is root's.
+# It runs juistd while the switch's file exists and stops it once the file is gone, so the app
+# turns the VPN on and off without a password. The file's existence is all that is read of it.
+#
+# Extra juistd options (say --no-dht --no-stun) go in /etc/priel/juistd.flags, read only when root
+# owns it and no one else can write it.
+here=/Library/PrivilegedHelperTools/me.0x23.priel
+switch="/Library/Application Support/Priel/on"
+flags=/etc/priel/juistd.flags
+log=/var/log/juistd.log
+pid=
+tick=0
+
+extra() {
+	[ -f "$flags" ] || return 0
+	if [ "$(/usr/bin/stat -f '%u' "$flags")" = 0 ] && [ $(( 0$(/usr/bin/stat -f '%Lp' "$flags") & 022 )) = 0 ]; then
+		grep -v '^#' "$flags" | tr '\n' ' '
+	else
+		echo "juistd-launch: ignoring $flags: it must be owned by root and writable by root alone" >&2
+	fi
+}
+
+start() {
+	[ -d /var/db/juist ] || mkdir -m 700 /var/db/juist
+	# juistd makes its socket directory 0700; the app and the command line need to reach the
+	# socket, which is itself 0666.
+	mkdir -p /var/run/juist
+	chmod 755 /var/run/juist
+	# The split DNS files are there while juistd runs.
+	"$here/priel-dns" start || true
+	# extra is split into words on purpose, and only that: -f keeps a * in it from naming files.
+	set -f
+	# shellcheck disable=SC2046
+	"$here/juistd" --home /var/db/juist --socket /var/run/juist/juistd.sock --tun utun9 $(extra) &
+	pid=$!
+	set +f
+	started=$(date +%s)
+}
+
+# Whether juistd runs; one that has exited stays a zombie until waited for, which kill -0 counts.
+alive() {
+	[ -n "$pid" ] && ps -p "$pid" -o stat= 2>/dev/null | grep -qv Z
+}
+
+# Stops juistd and waits for it, however long its shutdown takes.
+stop() {
+	[ -n "$pid" ] || return 0
+	kill -TERM "$pid" 2>/dev/null
+	# A signal ends a wait early; wait again until juistd itself is gone.
+	while wait "$pid"; [ $? -gt 128 ] && kill -0 "$pid" 2>/dev/null; do :; done
+	pid=
+	"$here/priel-dns" stop || true
+}
+
+# launchd writes juistd's output to the log, opened for appending, so copying it aside and
+# emptying it keeps it small without a restart; the two copies before it are kept.
+rotate() {
+	[ "$(/usr/bin/stat -f %z "$log" 2>/dev/null || echo 0)" -gt 10485760 ] || return 0
+	[ ! -f "$log.1" ] || mv -f "$log.1" "$log.2"
+	cp "$log" "$log.1" && : > "$log"
+}
+
+trap 'stop; exit 0' TERM INT HUP
+
+while :; do
+	if [ -n "$pid" ] && ! alive; then
+		wait "$pid" 2>/dev/null
+		echo "juistd-launch: juistd exited with $?" >&2
+		pid=
+		"$here/priel-dns" stop || true
+		# One that dies at once is not restarted in a tight loop.
+		[ $(( $(date +%s) - started )) -ge 10 ] || sleep 10
+	fi
+	if [ -e "$switch" ] && [ -z "$pid" ]; then
+		start
+	elif [ ! -e "$switch" ] && [ -n "$pid" ]; then
+		stop
+	fi
+	tick=$((tick + 1))
+	[ $((tick % 300)) != 1 ] || rotate
+	# In the background, so a signal is handled at once rather than after the sleep.
+	sleep 1 &
+	wait $!
+done

@@ -8,6 +8,8 @@ struct JuistWindow: View {
     var monitor: Monitor
     @State private var copied: String?
     @State private var code = ""
+    @State private var newDomain = ""
+    @State private var newServer = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -18,6 +20,8 @@ struct JuistWindow: View {
                 if s.inNetwork {
                     Divider()
                     traffic
+                    Divider()
+                    dns
                 }
             }
             if let warning {
@@ -28,13 +32,15 @@ struct JuistWindow: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .section()
             }
-            if monitor.service == .needsApproval {
+            if monitor.helper == .outdated {
                 Divider()
                 HStack {
-                    Text("Priel needs your approval to run juist in the background.")
+                    Text("Priel was updated. What runs in the background is the earlier version until you update it.")
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer()
-                    Button("Open Login Items") { JuistService.openLoginItems() }
+                    Button("Update") { monitor.updateHelper() }
+                        .disabled(monitor.asking)
+                        .help("Asks for your password to copy this version's juistd and helpers into place")
                 }
                 .font(.callout)
                 .section()
@@ -55,13 +61,14 @@ struct JuistWindow: View {
             footer
         }
         .frame(width: 340)
+        .background(GeometryReader { FitWindow(height: $0.size.height) })
     }
 
     private var warning: String? {
         if let e = monitor.actionError { return e }
         // Approval and joining have their own rows, which say what to do.
         if let s = monitor.status, !s.inNetwork, !s.joining { return nil }
-        if case .attention(let why) = monitor.phase, monitor.service != .needsApproval { return why }
+        if case .attention(let why) = monitor.phase { return why }
         return nil
     }
 
@@ -86,7 +93,7 @@ struct JuistWindow: View {
                 Toggle("VPN", isOn: Binding(get: { monitor.isOn }, set: { monitor.turn(on: $0) }))
                     .toggleStyle(.switch)
                     .labelsHidden()
-                    .disabled(monitor.switching != nil || monitor.service == .notFound)
+                    .disabled(monitor.switching != nil || monitor.asking)
                     .accessibilityLabel("VPN")
             }
             if let s = monitor.status {
@@ -212,6 +219,64 @@ struct JuistWindow: View {
                 .frame(width: 120, height: 30)
                 .accessibilityHidden(true)
         }
+        .section()
+    }
+
+    // MARK: Split DNS
+
+    private var dns: some View {
+        let found = monitor.foundDNS
+        let new = Resolver(domain: newDomain.trimmingCharacters(in: .whitespaces).lowercased(),
+                           server: newServer.trimmingCharacters(in: .whitespaces))
+        let add = { monitor.setDNS(monitor.dns.filter { $0.domain != new.domain } + [new]) }
+        return VStack(alignment: .leading, spacing: 6) {
+            Text("DNS").font(.headline)
+            ForEach(monitor.dns, id: \.self) { r in
+                HStack(spacing: 6) {
+                    Text(r.domain)
+                    Spacer()
+                    if monitor.running && !monitor.dnsActive(r) {
+                        Text("not set")
+                            .foregroundStyle(.secondary)
+                            .help("/etc/resolver/\(r.domain) is not Priel's. Remove the domain here and add it again to take it over.")
+                    }
+                    Text(r.server).monospacedDigit().foregroundStyle(.secondary)
+                    Button { monitor.setDNS(monitor.dns.filter { $0 != r }) } label: { Image(systemName: "minus.circle") }
+                        .buttonStyle(.borderless)
+                        .disabled(monitor.asking)
+                        .help("Stop sending \(r.domain) to \(r.server)")
+                        .accessibilityLabel("Remove \(r.domain)")
+                }
+            }
+            if !found.isEmpty {
+                HStack {
+                    Text("/etc/resolver has " + found.map(\.domain).joined(separator: ", ") + ".")
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer()
+                    Button("Take Over") { monitor.setDNS(monitor.dns + found) }
+                        .controlSize(.small)
+                        .disabled(monitor.asking)
+                        .help("Priel writes these files while juist is on and removes them when it stops")
+                }
+                .font(.callout)
+            }
+            HStack {
+                TextField("Domain", text: $newDomain)
+                TextField("Server", text: $newServer)
+                    .frame(width: 96)
+                    .onSubmit { if new.valid { add() } }
+                Button("Add", action: add)
+                    .disabled(!new.valid || monitor.asking)
+            }
+            .textFieldStyle(.roundedBorder)
+            Text(monitor.dns.isEmpty
+                 ? "Send a domain's lookups to a server in the network while the VPN is on."
+                 : "While the VPN is on, lookups for these domains go to their server.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .onChange(of: monitor.dns) { newDomain = ""; newServer = "" }
         .section()
     }
 
@@ -341,6 +406,26 @@ struct Sparkline: View {
                 }
                 context.stroke(line, with: .color(color), lineWidth: 1.25)
             }
+        }
+    }
+}
+
+/// MenuBarExtra's window grows with its content but never shrinks back, which leaves the content
+/// floating in an empty panel when a section goes away. This sets the window to the content's
+/// height, keeping its top edge under the menu bar.
+private struct FitWindow: NSViewRepresentable {
+    var height: CGFloat
+
+    func makeNSView(context: Context) -> NSView { NSView() }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        let height = height
+        DispatchQueue.main.async {
+            guard let window = view.window, height > 0 else { return }
+            let content = window.contentRect(forFrameRect: window.frame)
+            guard abs(content.height - height) > 0.5 else { return }
+            let fitted = NSRect(x: content.minX, y: content.maxY - height, width: content.width, height: height)
+            window.setFrame(window.frameRect(forContentRect: fitted), display: true)
         }
     }
 }

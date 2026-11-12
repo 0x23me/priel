@@ -2,13 +2,15 @@ import Foundation
 
 /// Commands that need root, run through the system's administrator prompt.
 enum Admin {
-    /// Runs args as root. Returns what went wrong, or nil when it worked or the owner cancelled.
-    static func run(_ args: [String]) async -> String? {
+    /// Runs args as root, the password dialog saying why. Returns what went wrong, or nil when it
+    /// worked or the owner cancelled.
+    static func run(_ args: [String], why: String) async -> String? {
         let shell = args.map { "'" + $0.replacingOccurrences(of: "'", with: "'\\''") + "'" }.joined(separator: " ")
-        let literal = shell.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+        // Without a prompt of its own, the dialog says osascript wants to make changes.
+        let literal = [shell, why].map { $0.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"") }
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-        process.arguments = ["-e", "do shell script \"\(literal)\" with administrator privileges"]
+        process.arguments = ["-e", "do shell script \"\(literal[0])\" with prompt \"\(literal[1])\" with administrator privileges"]
         let stderr = Pipe()
         process.standardError = stderr
         process.standardOutput = FileHandle.nullDevice

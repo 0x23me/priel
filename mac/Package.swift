@@ -2,7 +2,7 @@
 import PackageDescription
 
 // Priel uses JuistKit; nothing depends on Priel.
-//   JuistKit   juistd's socket, its status, the tunnel's counters, the daemon's registration
+//   JuistKit   juistd's socket, its status, the tunnel's counters, the switch, split DNS
 //   Priel      the menu bar app
 let package = Package(
     name: "priel",

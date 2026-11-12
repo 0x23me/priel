@@ -9,9 +9,11 @@ default:
 build:
     swift build
 
-# Run unit tests
+# Run unit tests, and the two root scripts against scratch directories
 test:
     swift test
+    sh Tests/priel-dns-test.sh
+    sh Tests/juistd-launch-test.sh
 
 # Build juist from the fork if needed, then build and sign .build/Priel.app
 bundle:

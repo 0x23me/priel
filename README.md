@@ -13,21 +13,33 @@ Priel is not part of juist and not made by its author. If something breaks, open
 
 ## Mac
 
-Grab `Priel-VERSION.zip` from [releases](../../releases), unzip, move Priel to Applications,
-open it. Signed and notarized. macOS 14 or later, Apple silicon or Intel.
+```sh
+brew tap 0x23me/tap
+brew trust --cask 0x23me/tap/priel
+brew install --cask 0x23me/tap/priel
+```
 
-1. Flip the switch. macOS asks once whether Priel may run juist in the background
-   (System Settings › General › Login Items & Extensions). After that, no more prompts.
+Or grab `Priel-VERSION.zip` from [releases](../../releases), unzip, move Priel to Applications.
+Signed and notarized. macOS 14 or later, Apple silicon or Intel.
+
+1. Flip the switch. The first time, and again after each Priel update, it asks for your
+   password: that copies juistd and two small scripts into
+   `/Library/PrivilegedHelperTools/me.0x23.priel`, owned by root, checks they carry Priel's
+   signature, and installs a LaunchDaemon that runs them. After that the switch needs nothing.
 2. Paste an invite code from `juist invite` on a device that's already in the network.
    Joining also makes you this Mac's juist operator, which is what shows device names and
    latency.
 3. If you want the `juist` command too, hit Install. It links `/usr/local/bin/juist` to the
-   copy inside the app.
+   root-owned copy.
 
 Off means juistd is stopped and stays stopped across reboots. On means it starts at boot,
-before anyone logs in. Quitting Priel doesn't touch juistd.
+before anyone logs in. Quitting Priel doesn't touch juistd. The switch is the file
+`/Library/Application Support/Priel/on`; the daemon starts juistd while it exists.
 
-juistd runs as root from inside the app:
+Why the copy: anything inside an app in `/Applications` can be rewritten by your user, and
+root running it would hand root to anything running as you.
+
+juistd runs as root:
 `--home /var/db/juist --socket /var/run/juist/juistd.sock --tun utun9`. Anything else goes in
 `/etc/priel/juistd.flags`, which has to be owned by root (otherwise it's ignored):
 
@@ -38,11 +50,36 @@ echo "--no-dht --no-stun" | sudo tee /etc/priel/juistd.flags
 
 Flip the switch off and on to pick it up.
 
+### Split DNS
+
+If your network has internal domains, the DNS section sends their lookups to a server on the
+other side: `b.home.example` to 10.23.1.1, say. It uses `/etc/resolver`, one file per domain,
+written when juistd starts and removed when it stops, so with the VPN off nothing hangs on a
+server you can't reach. Priel only removes files it wrote. If you already made some by hand
+that point into a juist subnet, Take Over adopts them. The list lives in
+`/etc/priel/resolvers`.
+
+### Removing it
+
+Installed with Homebrew: `brew uninstall --zap priel`. A plain `brew uninstall` leaves juistd
+running: Homebrew runs a cask's uninstall steps on every upgrade too, and the VPN would drop.
+Otherwise:
+
+```sh
+sudo launchctl bootout system/me.0x23.priel.juistd
+sudo rm -rf /Library/LaunchDaemons/me.0x23.priel.juistd.plist /Library/PrivilegedHelperTools/me.0x23.priel \
+  "/Library/Application Support/Priel" /etc/priel /usr/local/bin/juist
+```
+
+`/var/db/juist` holds this Mac's keys in the network; delete it too if you're done with juist.
+
 The bundled juist comes from [0x23me/juist](https://github.com/0x23me/juist), juist plus three
 small commits on the `priel` branch. They leave a juist subnet out of the tunnel while the Mac
 sits on a network inside that subnet (so at home your LAN stays direct), let juistd tell the app
 each peer's last handshake and byte counts, and fix a build tag on macOS. The subnet one is my
 policy, not a safe default: any network numbered inside the subnet gets the same treatment.
+The handshake and byte counts are there for any local user, as the status socket is, without
+device names unless you're the operator; `netstat` already gives anyone the tunnel's totals.
 Building it yourself: [mac/README.md](mac/README.md).
 
 ## OPNsense

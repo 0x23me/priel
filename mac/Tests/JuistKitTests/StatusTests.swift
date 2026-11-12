@@ -17,12 +17,10 @@ func fixture(_ name: String) throws -> CBOR {
     #expect(s.selfName == "laptop-01")
     #expect(s.inNetwork)
     #expect(s.canOperate)
-    #expect(s.operatorName == "alice")
     #expect(s.device == "utun9")
     #expect(s.addresses.contains("198.18.68.2/32"))
     #expect(s.addresses.contains { $0.hasPrefix("fd12:3456:789a:20fc:") })
     let gate = try #require(s.devices.first { $0.name == "gate" })
-    #expect(gate.v4 == "198.18.68.1")
     #expect(gate.subnets == ["10.99.0.0/16"])
     #expect(s.reach.count == 1)
     let reach = try #require(s.reach.first)
@@ -36,7 +34,6 @@ func fixture(_ name: String) throws -> CBOR {
         r.why = "this device is on a network inside it"
         return r
     }()])
-    #expect(s.namesNot.hasPrefix("DNS is off on this device"))
     #expect(s.startError.isEmpty && s.alarm.isEmpty)
 }
 

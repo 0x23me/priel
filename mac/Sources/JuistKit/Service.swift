@@ -1,45 +1,32 @@
 import Foundation
 import ServiceManagement
 
-/// juistd as the launchd daemon the app carries (`me.0x23.priel.juistd.plist` in
-/// `Contents/Library/LaunchDaemons`). Registering starts it and keeps it
-/// started across restarts; unregistering stops it and keeps it stopped.
-/// The first registration needs the owner's approval in Login Items, which
-/// is asked once: later registrations after an unregistration are not.
+/// juistd as Priel's LaunchDaemon, `me.0x23.priel.juistd`. Root runs it from a root-owned copy of
+/// the app's helpers, never from the app, which the user can rewrite. The daemon keeps juistd
+/// running while the switch's file exists, so turning the VPN on and off is creating and removing
+/// that file: no password. Installing the copy, and updating it after Priel is updated, asks for
+/// one (Helper.swift).
 public enum JuistService {
-    static var daemon: SMAppService { SMAppService.daemon(plistName: "me.0x23.priel.juistd.plist") }
+    public static let helperDirectory = "/Library/PrivilegedHelperTools/me.0x23.priel"
+    public static let plistPath = "/Library/LaunchDaemons/me.0x23.priel.juistd.plist"
+    /// Owned by the user who installed, so their Priel flips the switch; root only checks that
+    /// the switch exists.
+    public static let stateDirectory = "/Library/Application Support/Priel"
+    public static var switchPath: String { stateDirectory + "/on" }
 
-    public enum State: Equatable, Sendable {
-        case off
-        case on
-        case needsApproval
-        /// The app is not a bundle carrying the daemon, as under `swift run`.
-        case notFound
+    public static var isOn: Bool { FileManager.default.fileExists(atPath: switchPath) }
+
+    public static var installed: Bool {
+        FileManager.default.fileExists(atPath: plistPath) && FileManager.default.fileExists(atPath: helperDirectory + "/juistd-launch")
     }
 
-    public static var state: State {
-        switch daemon.status {
-        case .enabled: .on
-        case .requiresApproval: .needsApproval
-        case .notFound: .notFound
-        default: .off
-        }
-    }
-
-    /// Turns juistd on or off. Turning on before approval does not throw:
-    /// the state becomes `needsApproval`, and Login Items is the place to
-    /// give it.
+    /// Turns juistd on or off; the daemon follows within a second.
     public static func set(on: Bool) throws {
-        do {
-            if on { try daemon.register() } else { try daemon.unregister() }
-        } catch {
-            if on, daemon.status == .requiresApproval { return }
-            throw error
+        if on {
+            try Data().write(to: URL(fileURLWithPath: switchPath))
+        } else if isOn {
+            try FileManager.default.removeItem(atPath: switchPath)
         }
-    }
-
-    public static func openLoginItems() {
-        SMAppService.openSystemSettingsLoginItems()
     }
 
     /// Start the app at login.

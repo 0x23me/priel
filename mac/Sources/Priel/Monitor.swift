@@ -16,7 +16,9 @@ final class Monitor {
 
     /// The last answer; nil while juistd does not answer.
     private(set) var status: Status?
-    private(set) var service = JuistService.state
+    /// The switch's file, and the root-owned copy the daemon runs.
+    private(set) var on = JuistService.isOn
+    private(set) var helper = Helper.state
     private(set) var meter = TrafficMeter()
     /// Round trips by member identity.
     private(set) var latency: [Data: TimeInterval] = [:]
@@ -28,6 +30,9 @@ final class Monitor {
     /// A command run through the administrator prompt is under way.
     private(set) var asking = false
     private(set) var commandLineInstalled = Monitor.findCommandLine()
+    /// Split DNS: Priel's list, and what is in /etc/resolver now.
+    private(set) var dns: [Resolver] = []
+    private(set) var resolverFiles: [(resolver: Resolver, ours: Bool)] = []
 
     var open = false {
         didSet { if open && !oldValue { wake() } }
@@ -48,8 +53,8 @@ final class Monitor {
 
     var phase: Phase {
         guard let s = status else {
-            if service == .needsApproval { return .attention("Allow Priel in Login Items to turn the VPN on.") }
-            return switching == true || service == .on ? .connecting : .off
+            if on && helper == .missing { return .attention("Priel's background part is not installed. Turn the VPN off and on.") }
+            return switching == true || on ? .connecting : .off
         }
         for problem in [s.startError, s.dataPlaneError, s.alarm, s.epochError, s.schemaAlarm, s.disabled] where !problem.isEmpty {
             return .attention(problem)
@@ -65,19 +70,34 @@ final class Monitor {
     var isOn: Bool { switching ?? running }
 
     func turn(on: Bool) {
-        guard switching == nil else { return }
+        guard switching == nil, !asking else { return }
         switching = on
         actionError = nil
         Task {
-            do {
-                try JuistService.set(on: on)
-            } catch {
-                actionError = error.localizedDescription
+            if on && helper != .current {
+                // Installs or updates the copy root runs, and turns on: the one password.
+                asking = true
+                if let install = Helper.install {
+                    actionError = await Admin.run(install, why: "Priel wants to install juistd, owned by root, to run the VPN.")
+                    // Installed, not cancelled: now the switch, which is this user's to flip.
+                    if actionError == nil, await Helper.check() == .current {
+                        do { try JuistService.set(on: true) } catch { actionError = error.localizedDescription }
+                    }
+                } else {
+                    actionError = "This copy of Priel is not signed with a Developer ID, so it cannot check what it would have root run."
+                }
+                asking = false
+            } else {
+                do {
+                    try JuistService.set(on: on)
+                } catch {
+                    actionError = error.localizedDescription
+                }
             }
-            service = JuistService.state
-            if on && service == .needsApproval { JuistService.openLoginItems() }
-            // Wait for juistd to answer or to stop answering, up to ten seconds.
-            for _ in 0..<20 where actionError == nil && service != .needsApproval {
+            self.on = JuistService.isOn
+            helper = await Helper.check()
+            // Wait for juistd to answer or to stop answering, up to fifteen seconds.
+            for _ in 0..<30 where actionError == nil && self.on == on {
                 await refresh()
                 if running == on { break }
                 try? await Task.sleep(for: .milliseconds(500))
@@ -86,36 +106,66 @@ final class Monitor {
         }
     }
 
+    /// Updates the copy root runs to this Priel's, after Priel itself was updated.
+    func updateHelper() {
+        guard let install = Helper.install else { return }
+        asRoot(install, home: false, why: "Priel wants to update juistd to the version in this Priel.")
+    }
+
     /// Joins the network the invite code is for, making the logged-in user the operator.
+    /// The code goes on root's command line, which other users can see while it runs: juist join
+    /// takes it no other way. It is used once, and juist invite's words are checked besides.
     func join(_ code: String) {
-        asRoot([Self.juist, "join", code, "--operator", NSUserName()])
+        let code = code.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !code.isEmpty, !code.hasPrefix("-"), !code.contains(where: \.isWhitespace) else {
+            actionError = "That is not an invite code: a code is one word, like 42-drumbeat-tolerance-glucose."
+            return
+        }
+        asRoot([Helper.tool("juist"), "join", code, "--operator", NSUserName()], why: "Priel wants to join this Mac to a juist network.")
     }
 
     /// Makes the logged-in user this device's operator, for names and latency.
     func becomeOperator() {
-        asRoot([Self.juist, "set", "--operator", NSUserName()])
+        asRoot([Helper.tool("juist"), "set", "--operator", NSUserName()], why: "Priel wants to make you this Mac's juist operator.")
     }
 
-    /// Links `juist` in /usr/local/bin to the app's copy.
+    /// Links `juist` in /usr/local/bin to the root-owned copy, which matches the juistd that runs.
     func installCommandLine() {
-        asRoot(["/bin/sh", "-c", "mkdir -p /usr/local/bin && ln -sf \"$0\" /usr/local/bin/juist", Self.juist])
+        asRoot(["/bin/sh", "-c", "mkdir -p /usr/local/bin && ln -sfh \"$0\" /usr/local/bin/juist", Helper.tool("juist")], why: "Priel wants to put the juist command in /usr/local/bin.")
     }
 
-    /// The app's own `juist`, which matches the juistd it runs.
-    static var juist: String { Bundle.main.bundleURL.appending(path: "Contents/MacOS/juist").path }
+    /// Replaces the split DNS list; priel-dns rewrites /etc/resolver at once while juistd runs.
+    func setDNS(_ list: [Resolver]) {
+        asRoot([Helper.tool("priel-dns"), "set"] + list.flatMap { [$0.domain, $0.server] }, why: "Priel wants to change which domains it sends to which DNS server.")
+    }
+
+    /// Domains in /etc/resolver Priel did not write, whose server is in a subnet the network
+    /// routes: the hand-made files Priel can take over.
+    var foundDNS: [Resolver] {
+        let prefixes = status?.subnets.map(\.prefix) ?? []
+        return resolverFiles.filter { file in
+            !file.ours && !dns.contains { $0.domain == file.resolver.domain } && prefixes.contains { file.resolver.server(in: $0) }
+        }.map(\.resolver)
+    }
+
+    /// Whether a domain's file is Priel's and says what the list says.
+    func dnsActive(_ r: Resolver) -> Bool {
+        resolverFiles.contains { $0.ours && $0.resolver == r }
+    }
 
     static func findCommandLine() -> Bool {
         ["/usr/local/bin/juist", "/opt/homebrew/bin/juist"].contains { FileManager.default.isExecutableFile(atPath: $0) }
     }
 
-    private func asRoot(_ args: [String]) {
+    private func asRoot(_ args: [String], home: Bool = true, why: String) {
         guard !asking else { return }
         asking = true
         actionError = nil
         Task {
             // HOME is root's, so the command line's cache does not land root-owned in the user's Library.
-            actionError = await Admin.run(["/usr/bin/env", "HOME=/var/root"] + args)
+            actionError = await Admin.run(home ? ["/usr/bin/env", "HOME=/var/root"] + args : args, why: why)
             commandLineInstalled = Self.findCommandLine()
+            helper = await Helper.check()
             await refresh()
             asking = false
         }
@@ -138,33 +188,52 @@ final class Monitor {
         }
     }
 
-    /// Cuts the current wait short, so opening the window shows fresh figures.
+    /// Cuts the current wait short, so opening the window shows fresh figures, and checks the
+    /// root-owned copy again, which an update elsewhere may have changed.
     private func wake() {
         sleeper?.cancel()
+        Task { helper = await Helper.check() }
     }
 
     /// Reads the counters, and the status too when status is set.
     private func refresh(status fetch: Bool = true) async {
-        service = JuistService.state
+        on = JuistService.isOn
         if fetch {
             let client = client, figures = figures
-            let answer = await Task.detached { () -> Result<Status, Error> in
-                Result { try client.status(figures: figures) }
+            let answer = await Task.detached { () -> (Result<Status, Error>, refused: Bool) in
+                let first = Result { try client.status(figures: figures) }
+                // A juistd without the patch refuses the unknown field. Only an answer to the same
+                // question without it says that is why; any other error is the daemon's.
+                guard figures, case .failure(JuistError.daemon(_)) = first,
+                      let plain = try? client.status(figures: false) else { return (first, false) }
+                return (.success(plain), true)
             }.value
-            switch answer {
+            switch answer.0 {
             case .success(let s):
                 status = s
-            case .failure(JuistError.daemon(_)) where figures:
-                // A juistd without the patch refuses the unknown field; ask without it from the next tick.
-                self.figures = false
+                if answer.refused { self.figures = false }
+            case .failure(JuistError.daemon(_)):
+                break
             case .failure:
                 status = nil
+                // Whichever juistd answers next may be one with the patch.
+                self.figures = true
             }
+            readDNS()
         }
         let device = status?.device ?? ""
         let counters = device.isEmpty ? nil : await Task.detached { InterfaceCounters.read(device) }.value
         meter.add(counters, at: Date())
         if status == nil { latency = [:] }
+    }
+
+    /// PRIEL_ETC and PRIEL_RESOLVER_DIR point the app at other files, for rendering it with sample
+    /// ones; priel-dns, which root runs, takes no such thing.
+    private func readDNS() {
+        let env = ProcessInfo.processInfo.environment
+        let list = env["PRIEL_ETC"].map { $0 + "/resolvers" } ?? Resolver.listPath
+        dns = (try? String(contentsOfFile: list, encoding: .utf8)).map(Resolver.list) ?? []
+        resolverFiles = Resolver.files(in: env["PRIEL_RESOLVER_DIR"] ?? Resolver.systemDirectory)
     }
 
     private func ping() async {

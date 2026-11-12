@@ -13,7 +13,7 @@ jobs:
         with:
           go-version: stable
       - name: Unit tests
-        run: cd mac && swift test
+        run: cd mac && swift test && sh Tests/priel-dns-test.sh && sh Tests/juistd-launch-test.sh
       - name: juist builds from the fork
         run: sh mac/juist/build.sh
 

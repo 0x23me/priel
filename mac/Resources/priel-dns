@@ -1,0 +1,93 @@
+#!/bin/sh
+# Split DNS for juist on macOS: one /etc/resolver file per domain in /etc/priel/resolvers, there
+# while juistd runs and gone when it stops. Lines in that file are "DOMAIN NAMESERVER".
+#
+#   priel-dns start                     write the files (juistd-launch, as juistd starts)
+#   priel-dns stop                      remove them (juistd-launch, as juistd stops)
+#   priel-dns set [DOMAIN NAMESERVER]…  replace the list, and the files if juistd runs (the app)
+#
+# Priel only ever touches files it wrote, marked by their first line, except that set removes a
+# file of the same name as a domain on the new list: the owner picked that domain in the app.
+set -eu
+conf=/etc/priel/resolvers
+dir=/etc/resolver
+owner=0
+mark="# Written by Priel while juist is on, removed when it stops. Edit the list in Priel."
+
+valid() {
+	case "$1" in '' | .* | *. | *..* | *[!A-Za-z0-9.-]*) return 1 ;; esac
+	case "$2" in '' | *[!0-9A-Fa-f.:]*) return 1 ;; esac
+}
+
+ours() {
+	[ -f "$1" ] && [ "$(head -n 1 "$1")" = "$mark" ]
+}
+
+# The list, as "DOMAIN NAMESERVER" lines; read only when root owns it and root alone can write it.
+list() {
+	[ -f "$conf" ] || return 0
+	if [ "$(/usr/bin/stat -f '%u' "$conf")" != "$owner" ] || [ $(( 0$(/usr/bin/stat -f '%Lp' "$conf") & 022 )) != 0 ]; then
+		echo "priel-dns: ignoring $conf: it must be owned by root and writable by root alone" >&2
+		return 0
+	fi
+	grep -v '^[[:space:]]*#' "$conf" | while read -r domain server _; do
+		[ -n "$domain" ] || continue
+		if valid "$domain" "$server"; then echo "$domain $server"; else echo "priel-dns: skipping \"$domain $server\"" >&2; fi
+	done
+}
+
+stop() {
+	[ -d "$dir" ] || return 0
+	for f in "$dir"/*; do
+		if ours "$f"; then rm -f "$f"; fi
+	done
+}
+
+# Writes each domain's file, leaving one Priel did not write alone.
+start() {
+	stop
+	mkdir -p "$dir"
+	list | while read -r domain server; do
+		f="$dir/$domain"
+		if [ -e "$f" ] && ! ours "$f"; then
+			echo "priel-dns: leaving $f alone, Priel did not write it" >&2
+			continue
+		fi
+		printf '%s\nnameserver %s\n' "$mark" "$server" > "$f.priel"
+		chmod 644 "$f.priel"
+		mv -f "$f.priel" "$f"
+	done
+	killall -HUP mDNSResponder 2>/dev/null || true
+}
+
+case "${1:-}" in
+start) start ;;
+stop)
+	stop
+	killall -HUP mDNSResponder 2>/dev/null || true
+	;;
+set)
+	shift
+	[ $(( $# % 2 )) = 0 ] || { echo "priel-dns: set takes DOMAIN NAMESERVER pairs" >&2; exit 2; }
+	out=
+	while [ $# -gt 0 ]; do
+		valid "$1" "$2" || { echo "\"$1\" with nameserver \"$2\" is not a domain and an IP address" >&2; exit 2; }
+		out="$out$1 $2
+"
+		shift 2
+	done
+	mkdir -p "$(dirname "$conf")"
+	printf '# DOMAIN NAMESERVER, one per line. Written by Priel.\n%s' "$out" > "$conf.new"
+	chown "$owner" "$conf.new"
+	chmod 644 "$conf.new"
+	mv -f "$conf.new" "$conf"
+	list | while read -r domain _; do
+		if [ -e "$dir/$domain" ] && ! ours "$dir/$domain"; then rm -f "$dir/$domain"; fi
+	done
+	if pgrep -qx juistd; then start; else stop; fi
+	;;
+*)
+	echo "usage: priel-dns start | stop | set [DOMAIN NAMESERVER]..." >&2
+	exit 2
+	;;
+esac

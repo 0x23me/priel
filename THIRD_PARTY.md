@@ -8,3 +8,7 @@ juist's license and its third-party licenses are in its repository at the versio
 
 juist's own dependencies (WireGuard and Tailscale's `magicsock`, among others) are listed in
 its `THIRD_PARTY_LICENSES`.
+
+**Martian Mono** (github.com/evilmartians/mono), SIL Open Font License 1.1, Copyright 2021 The
+Martian Mono Project Authors. The site serves its Latin subset from `site/fonts/`, with the
+license beside it in `site/fonts/OFL.txt`.
