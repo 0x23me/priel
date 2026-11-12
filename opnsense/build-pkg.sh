@@ -1,14 +1,14 @@
 #!/bin/sh
 # Builds the OPNsense plugin as a FreeBSD package on any system: dist/os-juist-VERSION-ABI.pkg
-# for each ABI given (default FreeBSD:14:amd64 and FreeBSD:15:amd64). It holds scripts and
-# templates only; juist itself comes from juist's own packages.
+# for each ABI given (default FreeBSD 15, amd64 and aarch64, as OPNsense 26.7 and later). It holds
+# scripts and templates only, and depends on juist, which comes from juist's own repository.
 #   sh build-pkg.sh [ABI...]
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 cd "$here"
 version=$(sed -n 's/^PLUGIN_VERSION=[[:space:]]*//p' Makefile)
 name=os-juist
-[ $# -gt 0 ] || set -- FreeBSD:14:amd64 FreeBSD:15:amd64
+[ $# -gt 0 ] || set -- FreeBSD:15:amd64 FreeBSD:15:aarch64
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 mtime=$(git log -1 --format=%ct -- . 2>/dev/null || date +%s)
@@ -37,6 +37,7 @@ cat > "$work/manifest.json" <<JSON
 	"prefix": "/usr/local",
 	"licenselogic": "single",
 	"licenses": ["BSD3CLAUSE"],
+	"deps": {"juist": {"origin": "net/juist", "version": "0.28.1,1"}},
 	"desc": $(python3 -c 'import json,sys; print(json.dumps(open("pkg-descr").read().split("\nPlugin Changelog")[0].strip()))')
 }
 JSON

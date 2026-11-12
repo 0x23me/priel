@@ -2,7 +2,7 @@ name: pages
 on:
   push:
     branches: [main]
-    paths: ['site/**', '.github/workflows/pages.yml']
+    paths: ['site/**', 'opnsense/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -22,6 +22,19 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: opnsense/tools/go.sum
+      # The plugin's pkg repository, under site/opnsense/FreeBSD:15:amd64 and the like.
+      - name: OPNsense pkg repository
+        env:
+          PKG_SIGNING_KEY: ${{ secrets.PKG_SIGNING_KEY }}
+        run: |
+          if [ -z "$PKG_SIGNING_KEY" ]; then echo "no PKG_SIGNING_KEY secret: the site goes up without the pkg repository"; exit 0; fi
+          key=$(mktemp) && printf '%s\n' "$PKG_SIGNING_KEY" > "$key"
+          sh opnsense/build-repo.sh site/opnsense "$key"
+          rm -f "$key"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -18,21 +18,36 @@ same as any other VPN.
 
 ## Install
 
-juist first, then the plugin, as root on the firewall (FreeBSD 15 shown; OPNsense on
-FreeBSD 14 takes the `FreeBSD-14` plugin package):
+OPNsense 26.7 or later (FreeBSD 15), amd64 or arm64. Add juist's repository and this one, then
+install, as root on the firewall:
 
 ```sh
-pkg add https://github.com/nning/juist/releases/download/v0.27.1/juist-freebsd15-amd64.pkg
-pkg add https://github.com/0x23me/priel/releases/download/v0.1.0/os-juist-0.1-FreeBSD-15-amd64.pkg
+mkdir -p /usr/local/etc/pkg/keys
+fetch -o /usr/local/etc/pkg/keys/juist.pub https://pkg.juist.nning.io/juist/freebsd.pub
+fetch -o /usr/local/etc/pkg/keys/priel.pub https://0x23me.github.io/priel/opnsense/priel.pub
+cat > /usr/local/etc/pkg/repos/priel.conf <<'EOF'
+juist: { url: "https://pkg.juist.nning.io/juist/freebsd/${ABI}", signature_type: "pubkey", pubkey: "/usr/local/etc/pkg/keys/juist.pub" }
+priel: { url: "https://0x23me.github.io/priel/opnsense/${ABI}", signature_type: "pubkey", pubkey: "/usr/local/etc/pkg/keys/priel.pub" }
+EOF
+pkg update && pkg install os-juist
 ```
 
-Remove with `pkg delete os-juist`; juist's state in its home directory stays.
+Key checksums (`sha256 /usr/local/etc/pkg/keys/*.pub`): juist's is
+`c649f2cd073f9e72825b0c1b8a2682f25c5c55405a178ea6d8a0f8b65ed89e3d` (from juist's install docs),
+Priel's is `092493a223800ae06b56630efc2483b59eb3331fa43d7fd6b2dd26708655121b`.
+
+`pkg install os-juist` pulls juist from juist's repository. Remove with `pkg delete os-juist`;
+juist's state in its home directory stays.
 
 ## Build
 
-`sh build-pkg.sh` writes `dist/os-juist-VERSION-FreeBSD-14-amd64.pkg` and the FreeBSD 15 one, on
+`sh build-pkg.sh` writes `dist/os-juist-VERSION-FreeBSD-15-amd64.pkg` and the aarch64 one, on
 any system with Go: the package is assembled by `tools/mkpkg` (from juist) rather than by
 FreeBSD's `pkg create`, and runs the same install scripts OPNsense's own plugins do.
+
+`sh build-repo.sh OUT KEY` adds the signed catalog around them with `tools/mkrepo` (also from
+juist). The site's deploy runs it with the `PKG_SIGNING_KEY` secret, so the repository at
+`0x23me.github.io/priel/opnsense/${ABI}` follows `main`.
 
 The `Makefile` is the one OPNsense's [plugins](https://github.com/opnsense/plugins) tree takes,
 for building it there as `net/juist`.

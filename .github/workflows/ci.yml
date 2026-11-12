@@ -28,6 +28,8 @@ jobs:
         run: |
           cd opnsense/tools && go vet ./...
           cd .. && sh build-pkg.sh
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$RUNNER_TEMP/test.pem" 2>/dev/null
+          sh build-repo.sh "$RUNNER_TEMP/repo" "$RUNNER_TEMP/test.pem"
           php -l src/etc/inc/plugins.inc.d/juist.inc
           find src -name '*.php' -exec php -l {} \;
           python3 -m py_compile src/opnsense/scripts/juist/juist.py

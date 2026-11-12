@@ -131,20 +131,20 @@
     </div>
     <div class="fw">
       <div class="well">
-        <div class="well__bar"><span>root@opnsense</span><span>FreeBSD 15, amd64</span></div>
+        <div class="well__bar"><span>root@opnsense</span><span>OPNsense 26.7+</span></div>
         <div class="cmd">
-          <div><code><span class="p">$ </span>pkg add <span class="arg">https://github.com/nning/juist/releases/download/v0.27.1/juist-freebsd15-amd64.pkg</span></code></div>
-          <button class="copy" type="button" aria-label="Copy the juist install command" data-copy="pkg add https://github.com/nning/juist/releases/download/v0.27.1/juist-freebsd15-amd64.pkg"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button>
+          <div><code><span class="p">$ </span>fetch <span class="arg">https://0x23me.github.io/priel/opnsense/setup.sh</span> &amp;&amp; sh setup.sh</code><small>Adds two repositories. <a class="link" href="opnsense/setup.sh">Read&nbsp;it</a>.</small></div>
+          <button class="copy" type="button" aria-label="Copy the repository setup" data-copy="fetch https://0x23me.github.io/priel/opnsense/setup.sh &amp;&amp; sh setup.sh"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button>
         </div>
         <div class="cmd">
-          <div><code><span class="p">$ </span>pkg add <span class="arg">https://github.com/0x23me/priel/releases/latest/download/os-juist-0.1-FreeBSD-15-amd64.pkg</span></code><small>FreeBSD 14 box: take the FreeBSD-14 one.</small></div>
-          <button class="copy" type="button" aria-label="Copy the plugin install command" data-copy="pkg add https://github.com/0x23me/priel/releases/latest/download/os-juist-0.1-FreeBSD-15-amd64.pkg"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button>
+          <div><code><span class="p">$ </span>pkg update &amp;&amp; pkg install <span class="arg">os-juist</span></code><small>Pulls in juist.</small></div>
+          <button class="copy" type="button" aria-label="Copy the install command" data-copy="pkg update &amp;&amp; pkg install os-juist"><svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button>
         </div>
       </div>
       <dl>
         <div><dt>VPN › juist</dt><dd>Service, ports, relay.</dd></div>
-        <div><dt>A juist interface group</dt><dd>Rules go on it, as for any VPN.</dd></div>
-        <div><dt>Invites from the GUI</dt><dd>Needs an admin key on the firewall.</dd></div>
+        <div><dt>Updates</dt><dd>With the firewall’s own.</dd></div>
+        <div><dt>A juist interface group</dt><dd>For your rules.</dd></div>
       </dl>
     </div>
   </div>
@@ -260,7 +260,8 @@ document.querySelectorAll('[data-switch]').forEach((root) => {
 
 // Copy buttons: the icon turns into a tick for 1.4 s.
 document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', () => {
-  navigator.clipboard.writeText(b.dataset.copy).then(() => { b.classList.add('is-done'); setTimeout(() => b.classList.remove('is-done'), 1400); });
+  const text = b.dataset.copy || b.closest('.cmd').querySelector('code').textContent;
+  navigator.clipboard.writeText(text).then(() => { b.classList.add('is-done'); setTimeout(() => b.classList.remove('is-done'), 1400); });
 }));
 </script>
 <script>window.hallmarkSlots = (m) => { for (const [k, v] of Object.entries(m)) { const s = document.querySelector(`[data-slot="${k}"]`); if (!s) continue; const im = new Image(); im.src = typeof v === 'string' ? v : v.src; im.alt = (typeof v === 'object' && v.alt) || s.dataset.alt || ''; s.querySelectorAll(':scope > img').forEach((o) => o.remove()); s.prepend(im); } };

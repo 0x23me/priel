@@ -47,16 +47,27 @@ Building it yourself: [mac/README.md](mac/README.md).
 
 ## OPNsense
 
-The plugin needs juist itself, from juist's own FreeBSD package. As root on the firewall:
+Two pkg repositories, once: juist's own (for juist) and Priel's (for the plugin, which depends
+on juist). As root on the firewall:
 
 ```sh
-pkg add https://github.com/nning/juist/releases/download/v0.27.1/juist-freebsd15-amd64.pkg
-pkg add https://github.com/0x23me/priel/releases/latest/download/os-juist-0.1-FreeBSD-15-amd64.pkg
+mkdir -p /usr/local/etc/pkg/keys
+fetch -o /usr/local/etc/pkg/keys/juist.pub https://pkg.juist.nning.io/juist/freebsd.pub
+fetch -o /usr/local/etc/pkg/keys/priel.pub https://0x23me.github.io/priel/opnsense/priel.pub
+cat > /usr/local/etc/pkg/repos/priel.conf <<'EOF'
+juist: { url: "https://pkg.juist.nning.io/juist/freebsd/${ABI}", signature_type: "pubkey", pubkey: "/usr/local/etc/pkg/keys/juist.pub" }
+priel: { url: "https://0x23me.github.io/priel/opnsense/${ABI}", signature_type: "pubkey", pubkey: "/usr/local/etc/pkg/keys/priel.pub" }
+EOF
+pkg update && pkg install os-juist
 ```
 
-On an OPNsense built on FreeBSD 14 (`freebsd-version` tells you), take the `FreeBSD-14`
-plugin package. Then it's under VPN › juist. What it changes on the box:
-[opnsense/README.md](opnsense/README.md).
+Key checksums (`sha256 /usr/local/etc/pkg/keys/*.pub`): juist's is
+`c649f2cd073f9e72825b0c1b8a2682f25c5c55405a178ea6d8a0f8b65ed89e3d` (from juist's install docs),
+Priel's is `092493a223800ae06b56630efc2483b59eb3331fa43d7fd6b2dd26708655121b`.
+
+After that the plugin is under VPN › juist and should be listed under System › Firmware ›
+Plugins; it updates with the firewall. OPNsense 26.7 or later (FreeBSD 15), amd64 or arm64. What it changes
+on the box: [opnsense/README.md](opnsense/README.md).
 
 ## State of things
 

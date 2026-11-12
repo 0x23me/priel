@@ -103,7 +103,7 @@ html:not(.js) .panel + .panel { margin-top: var(--space-3xl); }
 .fw { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--space-3xl); align-items: start; }
 .well { background: var(--color-paper-2); border: var(--rule-hair) solid var(--color-rule); }
 .well__bar { display: flex; justify-content: space-between; align-items: center; padding: var(--space-xs) var(--space-lg); border-bottom: var(--rule-hair) solid var(--color-rule); font-size: var(--text-sm); color: var(--color-muted); }
-.cmd { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-md); align-items: start; padding: var(--space-lg); border-bottom: var(--rule-hair) solid var(--color-rule); }
+.cmd { display: grid; grid-template-columns: minmax(0, 1fr) auto; min-width: 0; gap: var(--space-md); align-items: start; padding: var(--space-lg); border-bottom: var(--rule-hair) solid var(--color-rule); }
 .cmd:last-child { border-bottom: 0; }
 .cmd code { font-size: var(--text-md); overflow-wrap: anywhere; color: var(--color-ink); }
 .cmd code .p { color: var(--color-muted); }
