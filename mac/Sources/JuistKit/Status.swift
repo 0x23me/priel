@@ -46,7 +46,8 @@ public struct PeerReach: Equatable, Sendable {
     public var seeking = false
     public var absent = false
     public var outdated = false
-    /// The macOS patch's figures, present when asked for.
+    /// When the tunnel's last handshake completed, and what it carried since juistd started;
+    /// the bytes are zero in a reader's view.
     public var handshake: Date?
     public var rxBytes: UInt64 = 0
     public var txBytes: UInt64 = 0
@@ -115,9 +116,9 @@ extension PeerReach {
         absent = r[5]?.bool ?? false
         outdated = r[9]?.bool ?? false
         relay = r[11]?.string ?? ""
-        handshake = r[100]?.int.flatMap(Self.date)
-        rxBytes = r[101]?.uint64 ?? 0
-        txBytes = r[102]?.uint64 ?? 0
+        handshake = r[13]?.int.flatMap(Self.date)
+        rxBytes = r[14]?.uint64 ?? 0
+        txBytes = r[15]?.uint64 ?? 0
     }
 
     /// Unix seconds, nil for zero, which juist writes for "never".

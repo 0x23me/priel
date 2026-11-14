@@ -1,6 +1,7 @@
 #!/bin/sh
 # Runs Resources/juistd-launch with its paths moved into a scratch directory and stand-ins for
-# juistd and priel-dns: the switch starts and stops juistd, a crash is restarted, TERM stops all.
+# juistd and priel-dns, and your own user for _juist: the switch starts and stops juistd, a crash is
+# restarted, TERM stops all, and without its user juistd is not started.
 set -eu
 src="$(cd "$(dirname "$0")/.." && pwd)/Resources/juistd-launch"
 t=$(mktemp -d)
@@ -12,7 +13,8 @@ sed -e "s|/Library/PrivilegedHelperTools/me.0x23.priel|$t/here|" \
 	-e "s|/Library/Application Support/Priel|$t/state|" \
 	-e "s|/etc/priel/juistd.flags|$t/flags|" \
 	-e "s|/var/log/juistd.log|$t/juistd.log|" -e "s|10485760|100|" \
-	-e "s|/var/db/juist|$t/db|g" -e "s|/var/run/juist|$t/run|g" "$src" > "$t/launch"
+	-e "s|/var/db/juist|$t/db|g" -e "s|/var/run/juist|$t/run|g" \
+	-e "s|^user=_juist|user=$(id -un)|" -e "s|-g \"\$user\"|-g $(id -gn)|g" "$src" > "$t/launch"
 cat > "$t/here/juistd" <<EOF
 #!/bin/sh
 echo "juistd \$*" >> "$t/log"
@@ -48,6 +50,8 @@ grep -q juistd "$t/log" && fail "juistd started with the switch off"
 touch "$t/state/on"
 until_log "^juistd --home"
 until_log "^dns start"
+[ "$(stat -f '%Lp %Su' "$t/db")" = "700 $(id -un)" ] || fail "home not made the user's, 0700"
+[ "$(stat -f '%Lp %Su' "$t/run")" = "755 $(id -un)" ] || fail "socket directory not made the user's, 0755"
 # The flags file is not root's here, so it is ignored, and said so.
 grep -q -- "--no-dht" "$t/log" && fail "used a flags file root does not own"
 rm "$t/state/on"
@@ -66,4 +70,15 @@ kill -TERM "$launch"
 wait "$launch" || true
 until_log "^juistd stopped" 2
 pgrep -f "$t/here/juistd" >/dev/null && fail "juistd still running after TERM"
+
+# Without its user, juistd is not started, and that is said once.
+sed "s|^user=.*|user=_priel_no_such_user|" "$t/launch" > "$t/launch-nouser"
+: > "$t/log"
+sh "$t/launch-nouser" 2>>"$t/log" &
+launch=$!
+sleep 2.5
+grep -q "^juistd --home" "$t/log" && fail "juistd started without its user"
+[ "$(grep -c "no _priel_no_such_user user" "$t/log")" -eq 1 ] || fail "the missing user not said exactly once"
+kill -TERM "$launch"
+wait "$launch" || true
 echo "juistd-launch: ok"

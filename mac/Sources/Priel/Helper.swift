@@ -118,6 +118,45 @@ enum Helper {
             sleep 0.2
             i=$((i + 1))
         done
+        # juistd runs as the hidden user _juist, made as juist's own installer makes it, so that
+        # either finds the other's: a group of its own and the first ID from 300 nothing has.
+        if ! dscl . -read /Users/_juist UniqueID >/dev/null 2>&1; then
+            taken=$( (dscl . -list /Users UniqueID; dscl . -list /Groups PrimaryGroupID) | awk '{ print $2 }')
+            uid=300
+            while echo "$taken" | grep -qx "$uid"; do
+                uid=$((uid + 1))
+                [ $uid -lt 500 ] || { echo "no free ID below 500 for the _juist user" >&2; exit 1; }
+            done
+            dscl . -create /Groups/_juist
+            dscl . -create /Groups/_juist PrimaryGroupID "$uid"
+            dscl . -create /Groups/_juist RealName juist
+            dscl . -create /Groups/_juist Password '*'
+            dscl . -create /Users/_juist
+            dscl . -create /Users/_juist UniqueID "$uid"
+            dscl . -create /Users/_juist PrimaryGroupID "$uid"
+            dscl . -create /Users/_juist UserShell /usr/bin/false
+            dscl . -create /Users/_juist NFSHomeDirectory /var/empty
+            dscl . -create /Users/_juist RealName juist
+            dscl . -create /Users/_juist Password '*'
+            dscl . -create /Users/_juist IsHidden 1
+        fi
+        # An earlier Priel's juistd kept its keys as root; they become _juist's. Only then: in a
+        # folder _juist owns, a link it made could hand it any file a recursive chown reaches.
+        if [ -d /var/db/juist ] && [ ! -L /var/db/juist ] && [ "$(stat -f %u /var/db/juist)" = 0 ]; then
+            chown -R _juist:_juist /var/db/juist
+            chmod 700 /var/db/juist
+        fi
+        # juist's own LaunchDaemon runs the same device from the same folder. Stopped and disabled,
+        # which juist's installer keeps as it finds it; zapping Priel enables it again.
+        if [ -f /Library/LaunchDaemons/io.nning.juist.juistd.plist ]; then
+            launchctl disable system/io.nning.juist.juistd
+            launchctl bootout system/io.nning.juist.juistd 2>/dev/null || true
+            i=0
+            while launchctl print system/io.nning.juist.juistd >/dev/null 2>&1 && [ $i -lt 100 ]; do
+                sleep 0.2
+                i=$((i + 1))
+            done
+        fi
         launchctl bootstrap system "$plist"
         # A juist command linked to an earlier Priel's own copy now runs root's.
         case $(readlink /usr/local/bin/juist 2>/dev/null || true) in

@@ -8,8 +8,8 @@ func fixture(_ name: String) throws -> CBOR {
     return try CBOR.decode(Data(contentsOf: url))
 }
 
-/// The status of the patched 0.27.1 daemon on a laptop at home, before the
-/// figures were added, read as its operator.
+/// The status of the patched 0.27.1 daemon on a laptop at home, which had no
+/// figures yet, read as its operator.
 @Test func decodesTheOperatorsStatus() throws {
     let response = try fixture("stock-operator")
     let s = Status(cbor: try #require(response[2]))
@@ -44,15 +44,15 @@ func fixture(_ name: String) throws -> CBOR {
 }
 
 @Test func decodesTheFigures() {
-    let r = PeerReach(cbor: .map([CBOR(2): .bool(true), CBOR(100): CBOR(1_700_000_000), CBOR(101): .unsigned(4096), CBOR(102): .unsigned(512)]))
+    let r = PeerReach(cbor: .map([CBOR(2): .bool(true), CBOR(13): CBOR(1_700_000_000), CBOR(14): .unsigned(4096), CBOR(15): .unsigned(512)]))
     #expect(r.live)
     #expect(r.handshake == Date(timeIntervalSince1970: 1_700_000_000))
     #expect(r.rxBytes == 4096 && r.txBytes == 512)
 }
 
-/// The same device after the figures patch, asked with `Request.Figures`.
+/// The same device with each peer's handshake and bytes, read as its operator.
 @Test func decodesTheOperatorsFigures() throws {
-    let s = Status(cbor: try #require(try fixture("operator-figures")[2]))
+    let s = Status(cbor: try #require(try fixture("operator")[2]))
     let reach = try #require(s.reach.first)
     #expect(reach.live && reach.direct)
     let handshake = try #require(reach.handshake)

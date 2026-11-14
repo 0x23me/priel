@@ -10,12 +10,11 @@ private let zero32 = String(repeating: "00", count: 32)
 /// The bytes Go's juist encodes for these requests (encode(&Request{...})).
 @Test func encodesRequestsAsJuistDoes() {
     #expect(hex(JuistClient.request(command: 1).encoded()) == "a301010f5820\(zero32)181f5820\(zero32)")
-    #expect(hex(JuistClient.request(command: 1, figures: true).encoded()) == "a401010f5820\(zero32)181f5820\(zero32)1864f5")
 }
 
 @Test func aMissingSocketIsNotRunning() {
     let client = JuistClient(socketPath: "/var/run/juist/none-here.sock")
-    #expect(throws: JuistError.notRunning) { try client.status(figures: false) }
+    #expect(throws: JuistError.notRunning) { try client.status() }
 }
 
 /// A one-shot server on a socket in a temporary folder that reads one framed
@@ -64,15 +63,15 @@ private final class FakeDaemon: @unchecked Sendable {
 
 @Test func readsTheStatusOverTheSocket() throws {
     let daemon = try FakeDaemon(answer: .map([CBOR(2): .map([CBOR(4): .text("lab"), CBOR(60): .text("utun9")])]))
-    let s = try JuistClient(socketPath: daemon.path).status(figures: true)
+    let s = try JuistClient(socketPath: daemon.path).status()
     daemon.wait()
     #expect(s.networkName == "lab" && s.device == "utun9")
-    #expect(try CBOR.decode(daemon.received)[100] == .bool(true))
+    #expect(try CBOR.decode(daemon.received)[1]?.int == 1)
 }
 
 @Test func anErrorAnswerThrows() throws {
     let daemon = try FakeDaemon(answer: .map([CBOR(1): .text("ipc: unknown field")]))
-    #expect(throws: JuistError.daemon("ipc: unknown field")) { try JuistClient(socketPath: daemon.path).status(figures: true) }
+    #expect(throws: JuistError.daemon("ipc: unknown field")) { try JuistClient(socketPath: daemon.path).status() }
     daemon.wait()
 }
 
@@ -89,6 +88,6 @@ private final class FakeDaemon: @unchecked Sendable {
 /// The real juistd on this Mac, when JUIST_LIVE_TESTS=1.
 @Test(.enabled(if: ProcessInfo.processInfo.environment["JUIST_LIVE_TESTS"] == "1"))
 func readsTheLiveDaemon() throws {
-    let s = try JuistClient().status(figures: false)
+    let s = try JuistClient().status()
     #expect(!s.networkName.isEmpty)
 }

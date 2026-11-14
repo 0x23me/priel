@@ -53,7 +53,7 @@ private let t0 = Date(timeIntervalSince1970: 1_700_000_000)
 /// The tunnel's counters agree with netstat's, when JUIST_LIVE_TESTS=1.
 @Test(.enabled(if: ProcessInfo.processInfo.environment["JUIST_LIVE_TESTS"] == "1"))
 func agreesWithNetstat() throws {
-    let device = try JuistClient().status(figures: false).device
+    let device = try JuistClient().status().device
     let ours = try #require(InterfaceCounters.read(device))
     let p = Process()
     p.executableURL = URL(fileURLWithPath: "/usr/sbin/netstat")

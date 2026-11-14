@@ -175,10 +175,10 @@ sha  k e      5 8s ag     o     1     0         .           9  9    .           
     <table class="where">
       <thead><tr><th scope="col">Thing</th><th scope="col">What it is</th></tr></thead>
       <tbody>
-        <tr><th scope="row">juistd</th><td>Runs as root from inside Priel.app, kept alive by launchd, up before login.</td></tr>
-        <tr><th scope="row">/var/db/juist</th><td>Keys and membership. Kept through off, upgrades and deleting the app.</td></tr>
+        <tr><th scope="row">juistd</th><td>A root-owned copy from Priel.app, kept alive by launchd, up before login. Root keeps the tunnel; the rest runs as the hidden user <code>_juist</code>.</td></tr>
+        <tr><th scope="row">/var/db/juist</th><td>Keys and membership, <code>_juist</code>’s. Kept through off, upgrades and deleting the app. Shared with juist’s own installer, which Priel takes over from.</td></tr>
         <tr><th scope="row">/etc/priel/juistd.flags</th><td>Extra juistd flags, say <code>--no-dht --no-stun</code>. Root-owned or it’s ignored.</td></tr>
-        <tr><th scope="row"><a class="link" href="https://github.com/0x23me/juist/compare/v0.27.1...priel">0x23me/juist</a></th><td>juist plus the three commits this needs. Read them, they’re short.</td></tr>
+        <tr><th scope="row"><a class="link" href="https://github.com/0x23me/juist/compare/v0.29.0...priel">0x23me/juist</a></th><td>juist plus the one commit this needs: your home LAN stays direct. Read it, it’s short.</td></tr>
       </tbody>
     </table>
   </div>

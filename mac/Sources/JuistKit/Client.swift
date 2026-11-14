@@ -31,10 +31,9 @@ public struct JuistClient: Sendable {
         self.socketPath = socketPath
     }
 
-    /// The status; figures asks for the macOS patch's per-peer handshake and
-    /// traffic, which a juistd without the patch refuses.
-    public func status(figures: Bool) throws -> Status {
-        let response = try call(Self.request(command: 1, figures: figures))
+    /// The status, with each peer's last handshake and, to the operator, its traffic.
+    public func status() throws -> Status {
+        let response = try call(Self.request(command: 1))
         guard let status = response[2] else { throw JuistError.malformed("no status") }
         return Status(cbor: status)
     }
@@ -51,14 +50,12 @@ public struct JuistClient: Sendable {
     /// A request as juistd decodes it canonically: the two identity fields
     /// (15, the exit node, and 31, the member to ping) are written even when
     /// zero, as Go writes a fixed-size array.
-    static func request(command: Int, ping: Data = Data(count: 32), figures: Bool = false) -> CBOR {
-        var fields: [CBOR: CBOR] = [
+    static func request(command: Int, ping: Data = Data(count: 32)) -> CBOR {
+        .map([
             CBOR(1): CBOR(command),
             CBOR(15): .bytes(Data(count: 32)),
             CBOR(31): .bytes(ping),
-        ]
-        if figures { fields[CBOR(100)] = .bool(true) }
-        return .map(fields)
+        ])
     }
 
     /// Sends request and returns the answer's map; an answer carrying an

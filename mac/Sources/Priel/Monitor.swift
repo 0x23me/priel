@@ -40,8 +40,6 @@ final class Monitor {
 
     /// JUIST_SOCKET points the app at another juistd, as a test daemon.
     private let client = JuistClient(socketPath: ProcessInfo.processInfo.environment["JUIST_SOCKET"] ?? JuistClient.systemSocket)
-    /// Off once a juistd without the macOS patch has refused the figures.
-    private var figures = true
     private var tick = 0
     private var sleeper: Task<Void, Never>?
 
@@ -199,25 +197,14 @@ final class Monitor {
     private func refresh(status fetch: Bool = true) async {
         on = JuistService.isOn
         if fetch {
-            let client = client, figures = figures
-            let answer = await Task.detached { () -> (Result<Status, Error>, refused: Bool) in
-                let first = Result { try client.status(figures: figures) }
-                // A juistd without the patch refuses the unknown field. Only an answer to the same
-                // question without it says that is why; any other error is the daemon's.
-                guard figures, case .failure(JuistError.daemon(_)) = first,
-                      let plain = try? client.status(figures: false) else { return (first, false) }
-                return (.success(plain), true)
-            }.value
-            switch answer.0 {
+            let client = client
+            switch await Task.detached(operation: { Result { try client.status() } }).value {
             case .success(let s):
                 status = s
-                if answer.refused { self.figures = false }
             case .failure(JuistError.daemon(_)):
                 break
             case .failure:
                 status = nil
-                // Whichever juistd answers next may be one with the patch.
-                self.figures = true
             }
             readDNS()
         }

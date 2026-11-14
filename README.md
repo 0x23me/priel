@@ -13,6 +13,8 @@ Priel is not part of juist and not made by its author. If something breaks, open
 
 ## Mac
 
+<img src="site/img/window-connected.png" width="340" alt="Priel's window: the switch on, this Mac's addresses, the network connected, a device reached directly at 4 ms, and the tunnel's rate and totals.">
+
 ```sh
 brew tap 0x23me/tap
 brew trust --cask 0x23me/tap/priel
@@ -25,7 +27,8 @@ Signed and notarized. macOS 14 or later, Apple silicon or Intel.
 1. Flip the switch. The first time, and again after each Priel update, it asks for your
    password: that copies juistd and two small scripts into
    `/Library/PrivilegedHelperTools/me.0x23.priel`, owned by root, checks they carry Priel's
-   signature, and installs a LaunchDaemon that runs them. After that the switch needs nothing.
+   signature, makes the hidden user `_juist` that juistd runs as, and installs a LaunchDaemon
+   that runs them. After that the switch needs nothing.
 2. Paste an invite code from `juist invite` on a device that's already in the network.
    Joining also makes you this Mac's juist operator, which is what shows device names and
    latency.
@@ -39,9 +42,10 @@ before anyone logs in. Quitting Priel doesn't touch juistd. The switch is the fi
 Why the copy: anything inside an app in `/Applications` can be rewritten by your user, and
 root running it would hand root to anything running as you.
 
-juistd runs as root:
-`--home /var/db/juist --socket /var/run/juist/juistd.sock --tun utun9`. Anything else goes in
-`/etc/priel/juistd.flags`, which has to be owned by root (otherwise it's ignored):
+juistd starts as root with `--home /var/db/juist --socket /var/run/juist/juistd.sock`, keeps a
+small helper as root for the tunnel (`utun100`), its addresses and routes, and runs the rest as
+`_juist`, which owns `/var/db/juist`. Anything else goes in `/etc/priel/juistd.flags`, which has
+to be owned by root (otherwise it's ignored):
 
 ```sh
 sudo mkdir -p /etc/priel
@@ -49,6 +53,14 @@ echo "--no-dht --no-stun" | sudo tee /etc/priel/juistd.flags
 ```
 
 Flip the switch off and on to pick it up.
+
+### If juist's own installer was here first
+
+`curl -fsSL https://juist.nning.io/install | sh` sets juist up with the same user and the same
+`/var/db/juist`, so this Mac stays the same device when Priel takes over: Priel's password step
+stops and disables juist's LaunchDaemon (`io.nning.juist.juistd`) and runs its own instead.
+Running juist's installer again leaves it disabled; `brew uninstall --zap priel` turns it back on.
+Other networks you started with juist's `setup.sh instance start` keep running as they are.
 
 ### Split DNS
 
@@ -71,15 +83,19 @@ sudo rm -rf /Library/LaunchDaemons/me.0x23.priel.juistd.plist /Library/Privilege
   "/Library/Application Support/Priel" /etc/priel /usr/local/bin/juist
 ```
 
-`/var/db/juist` holds this Mac's keys in the network; delete it too if you're done with juist.
+`/var/db/juist` holds this Mac's keys in the network, owned by the `_juist` user. If you're done
+with juist, delete both:
 
-The bundled juist comes from [0x23me/juist](https://github.com/0x23me/juist), juist plus three
-small commits on the `priel` branch. They leave a juist subnet out of the tunnel while the Mac
-sits on a network inside that subnet (so at home your LAN stays direct), let juistd tell the app
-each peer's last handshake and byte counts, and fix a build tag on macOS. The subnet one is my
-policy, not a safe default: any network numbered inside the subnet gets the same treatment.
-The handshake and byte counts are there for any local user, as the status socket is, without
-device names unless you're the operator; `netstat` already gives anyone the tunnel's totals.
+```sh
+sudo rm -rf /var/db/juist
+sudo dscl . -delete /Users/_juist; sudo dscl . -delete /Groups/_juist
+```
+
+The bundled juist comes from [0x23me/juist](https://github.com/0x23me/juist), juist plus one
+small commit on the `priel` branch: it leaves a juist subnet out of the tunnel while the Mac
+sits on a network inside that subnet, so at home your LAN stays direct. That is my policy, not a
+safe default: any network numbered inside the subnet gets the same treatment. Everything else
+the app shows, each peer's last handshake and, to the operator, its byte counts, is juist's own.
 Building it yourself: [mac/README.md](mac/README.md).
 
 ## OPNsense

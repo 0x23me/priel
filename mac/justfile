@@ -24,7 +24,7 @@ run: bundle
     pkill -x Priel || true
     open .build/Priel.app
 
-# Save juistd's status answer as a test fixture: just capture NAME [--figures]
+# Save juistd's status answer as a test fixture: just capture NAME
 capture name *flags:
     ./Scripts/capture-status.py {{name}} {{flags}}
 
