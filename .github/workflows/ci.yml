@@ -1,29 +1,51 @@
+# Builds and tests the Mac app and the OPNsense plugin on every push to main and every pull
+# request. The Mac tests need no juistd and no root: the two root scripts run against scratch
+# directories with stand-ins. The actions are pinned to commits, not to tags that can move.
 name: ci
+
 on:
   push:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   mac:
-    runs-on: macos-15
+    # The same image as the release.
+    runs-on: macos-26
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # juist/build.sh clones the fork itself, so there is no go.sum here to cache by.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: stable
+          cache: false
       - name: Unit tests
-        run: cd mac && swift test && sh Tests/priel-dns-test.sh && sh Tests/juistd-launch-test.sh
+        working-directory: mac
+        run: swift test && sh Tests/priel-dns-test.sh && sh Tests/juistd-launch-test.sh
       - name: juist builds from the fork
         run: sh mac/juist/build.sh
 
   opnsense:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: stable
+          cache-dependency-path: opnsense/tools/go.sum
       - name: Plugin packages
         run: |
           cd opnsense/tools && go vet ./...

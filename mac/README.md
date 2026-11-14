@@ -10,13 +10,29 @@ builds `juist` and `juistd` for arm64 and x86_64 from that tag of
 just test                 # unit tests, and the two root scripts against scratch directories;
                           # JUIST_LIVE_TESTS=1 adds the ones against a running juistd
 just install              # build juist if needed, bundle, sign, copy to /Applications, start
-just release 0.1.0        # bundle, notarize and staple into dist/
+just release 0.1.0        # bundle, notarize and staple into dist/, by hand
 ```
 
 Signing uses the "Developer ID Application" identity in your keychain
-(`JUIST_SIGN_IDENTITY` names another). Notarizing uses a `notarytool` keychain profile named
-`priel` (`PRIEL_NOTARY_PROFILE` names another), stored once with
-`xcrun notarytool store-credentials priel`.
+(`JUIST_SIGN_IDENTITY` names another). Notarizing uses an App Store Connect API key when
+`PRIEL_NOTARY_KEY` names its `.p8` (with `PRIEL_NOTARY_KEY_ID` and `PRIEL_NOTARY_ISSUER`), and
+otherwise a `notarytool` keychain profile named `priel` (`PRIEL_NOTARY_PROFILE` names another),
+stored once with `xcrun notarytool store-credentials priel`.
+
+## Releasing
+
+CI does it, from a tag. Put the version in `VERSION`, commit, then push an annotated tag whose
+message is the release notes:
+
+```sh
+git tag -a v0.3.0 -m "What changed, in Markdown"
+git push origin main v0.3.0
+```
+
+`.github/workflows/release.yml` checks the tag against `VERSION`, runs the tests, builds juist
+from the fork, signs, notarizes and staples the app on a macOS runner, builds the OPNsense
+plugin packages, publishes the release with both and what they were built with, and puts the
+cask into `0x23me/homebrew-tap`. The secrets it needs are listed at its top.
 
 ## The juist fork
 

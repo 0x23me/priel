@@ -1,20 +1,28 @@
 #!/usr/bin/env bash
 # Builds, signs and notarizes Priel VERSION into dist/: Priel-VERSION.zip, its SHA256, and the
 # Homebrew cask for it (dist/priel.rb, to copy into 0x23me/homebrew-tap's Casks folder).
-# Notarization uses the notarytool keychain profile in PRIEL_NOTARY_PROFILE (default "priel"),
-# stored once with: xcrun notarytool store-credentials priel --apple-id ... --team-id ...
+# Notarization uses an App Store Connect API key when PRIEL_NOTARY_KEY names its .p8 file (with
+# PRIEL_NOTARY_KEY_ID and PRIEL_NOTARY_ISSUER; this is how the release workflow runs it), and
+# otherwise the notarytool keychain profile in PRIEL_NOTARY_PROFILE (default "priel"), stored once
+# with: xcrun notarytool store-credentials priel --apple-id ... --team-id ...
 set -euo pipefail
 cd "$(dirname "$0")/.."
 version="${1:?usage: release.sh VERSION, as 0.1.0}"
 [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "VERSION is MAJOR.MINOR.PATCH, not $version" >&2; exit 1; }
-profile="${PRIEL_NOTARY_PROFILE:-priel}"
+if [ -n "${PRIEL_NOTARY_KEY:-}" ]; then
+    notary=(--key "$PRIEL_NOTARY_KEY" --key-id "${PRIEL_NOTARY_KEY_ID:?}" --issuer "${PRIEL_NOTARY_ISSUER:?}")
+else
+    notary=(--keychain-profile "${PRIEL_NOTARY_PROFILE:-priel}")
+fi
 PRIEL_VERSION="$version" ./Scripts/bundle.sh
 app=.build/Priel.app
+team="$(codesign -dv "$app" 2>&1 | sed -n 's/^TeamIdentifier=\([A-Z0-9]*\)$/\1/p')"
+[ -n "$team" ] || { echo "the app is not signed by a developer; a release has to be" >&2; exit 1; }
 mkdir -p dist
 zip="dist/Priel-$version.zip"
 rm -f "$zip"
 ditto -c -k --sequesterRsrc --keepParent "$app" "$zip"
-xcrun notarytool submit "$zip" --keychain-profile "$profile" --wait
+xcrun notarytool submit "$zip" "${notary[@]}" --wait
 xcrun stapler staple "$app"
 spctl --assess --type execute --verbose=2 "$app"
 rm "$zip"

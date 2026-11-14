@@ -1,25 +1,182 @@
-# On a tag vX.Y.Z: builds the OPNsense plugin packages and attaches them to the release.
-# The Mac app is signed and notarized on a Mac (mac/Scripts/release.sh) and uploaded with
-# gh release upload.
+# Builds, signs and notarizes the Mac app and builds the OPNsense plugin packages when a tag
+# vX.Y.Z is pushed, attaches them to the GitHub release vX.Y.Z and puts the cask into
+# 0x23me/homebrew-tap. The tag has to match mac/VERSION. The message of an annotated tag becomes
+# the release notes.
+#
+# Three jobs. `mac` runs other people's code (juist from 0x23me/juist, Go's toolchain) and holds
+# the signing secrets; it can only read this repository. `opnsense` builds the plugin packages and
+# holds nothing. `publish` runs none of that code and is the only one that can write here. The
+# actions are pinned to commits, not to tags that can move.
+#
+# Secrets:
+#   DEVELOPER_ID_CERTIFICATE           the Developer ID Application certificate with its key, .p12, base64
+#   DEVELOPER_ID_CERTIFICATE_PASSWORD  the password of that .p12
+#   NOTARY_KEY                         an App Store Connect API key, the content of its AuthKey_….p8
+#   NOTARY_KEY_ID, NOTARY_ISSUER       that key's ID and its issuer ID
+#   TAP_TOKEN                          a token that can push to 0x23me/homebrew-tap; without it the
+#                                      cask is only kept as an artifact of the run
 name: release
+
 on:
   push:
-    tags: ['v*']
+    tags: ["v*"]
 
-permissions:
-  contents: write
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
-  opnsense:
-    runs-on: ubuntu-latest
+  mac:
+    runs-on: macos-26
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check the tag against mac/VERSION
+        id: version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          [ "$version" = "$(tr -d '[:space:]' < mac/VERSION)" ] || {
+            echo "::error::the tag is $GITHUB_REF_NAME, mac/VERSION says $(cat mac/VERSION)"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # juist/build.sh clones the fork itself, so there is no go.sum here to cache by.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: stable
+          cache: false
+
+      # The compilers are the runner's and juist is the fork's tag that day: what went into this
+      # release is written down with it.
+      - name: Note what the release is built with
+        run: |
+          mkdir -p mac/dist
+          tag="$(tr -d '[:space:]' < mac/juist/VERSION)"
+          commit="$(git ls-remote https://github.com/0x23me/juist.git "refs/tags/$tag^{}" | cut -c1-7)"
+          {
+            echo "macOS $(sw_vers -productVersion) ($(sw_vers -buildVersion))"
+            xcodebuild -version | paste -sd' ' -
+            swift --version 2>&1 | head -1
+            go version
+            echo "juist $tag from 0x23me/juist at $commit"
+          } | tee mac/dist/built-with.txt
+
+      - name: Unit tests
+        working-directory: mac
+        run: swift test && sh Tests/priel-dns-test.sh && sh Tests/juistd-launch-test.sh
+
+      - name: Import the signing certificate
+        env:
+          CERTIFICATE: ${{ secrets.DEVELOPER_ID_CERTIFICATE }}
+          CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          password="$(uuidgen)"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          printf '%s' "$CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security import "$RUNNER_TEMP/certificate.p12" -k "$keychain" -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/certificate.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain" > /dev/null
+          security list-keychains -d user | xargs security list-keychains -d user -s "$keychain"
+          security find-identity -v -p codesigning "$keychain"
+
+      - name: Build, sign and notarize
+        working-directory: mac
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          NOTARY_KEY: ${{ secrets.NOTARY_KEY }}
+          PRIEL_NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          PRIEL_NOTARY_ISSUER: ${{ secrets.NOTARY_ISSUER }}
+        run: |
+          export PRIEL_NOTARY_KEY="$RUNNER_TEMP/notary.p8"
+          printf '%s\n' "$NOTARY_KEY" > "$PRIEL_NOTARY_KEY"
+          ./Scripts/release.sh "$VERSION"
+          rm "$PRIEL_NOTARY_KEY"
+
+      - name: Remove the signing keychain
+        if: always()
+        run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" 2>/dev/null || true
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mac
+          path: mac/dist/
+          if-no-files-found: error
+
+  opnsense:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+          cache-dependency-path: opnsense/tools/go.sum
       - run: cd opnsense && sh build-pkg.sh
-      - env:
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: opnsense
+          path: opnsense/dist/*.pkg
+          if-no-files-found: error
+
+  publish:
+    needs: [mac, opnsense]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.mac.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publish the release
+        env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --draft --title "Priel ${GITHUB_REF_NAME#v}" --notes ""
-          gh release upload "$GITHUB_REF_NAME" opnsense/dist/*.pkg --clobber
+          git fetch --depth=1 origin "+refs/tags/v$VERSION:refs/tags/v$VERSION"
+          {
+            if [ "$(git cat-file -t "v$VERSION")" = tag ]; then
+              git tag -l --format='%(contents)' "v$VERSION"
+              echo
+            fi
+            echo "Built with:"
+            sed 's/^/- /' dist/built-with.txt
+          } > "$RUNNER_TEMP/notes.md"
+          gh release create "v$VERSION" --verify-tag --title "Priel $VERSION" --notes-file "$RUNNER_TEMP/notes.md" \
+            "dist/Priel-$VERSION.zip" "dist/Priel-$VERSION.zip.sha256" dist/*.pkg
+
+      - name: Update the Homebrew tap
+        env:
+          TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
+        run: |
+          [ -n "$TAP_TOKEN" ] || { echo "::warning::no TAP_TOKEN; copy priel.rb from the run's artifact into the tap"; exit 0; }
+          tap="$RUNNER_TEMP/tap"
+          git clone --depth=1 "https://x-access-token:$TAP_TOKEN@github.com/0x23me/homebrew-tap.git" "$tap"
+          cp dist/priel.rb "$tap/Casks/priel.rb"
+          cd "$tap"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "priel $VERSION"
+          git push
