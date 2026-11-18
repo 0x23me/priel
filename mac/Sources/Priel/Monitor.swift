@@ -44,6 +44,20 @@ final class Monitor {
     private var sleeper: Task<Void, Never>?
 
     init() {
+        #if DEBUG
+        if let state = Shot.request?.state {
+            status = Shot.status(state)
+            latency = Shot.latency(state)
+            meter = Shot.meter()
+            on = true
+            helper = .current
+            commandLineInstalled = true
+            startsAtLogin = false
+            dns = Shot.dns
+            resolverFiles = Shot.dns.map { ($0, true) }
+            return
+        }
+        #endif
         Task { await run() }
     }
 

@@ -19,6 +19,10 @@ Signing uses the "Developer ID Application" identity in your keychain
 otherwise a `notarytool` keychain profile named `priel` (`PRIEL_NOTARY_PROFILE` names another),
 stored once with `xcrun notarytool store-credentials priel`.
 
+`.build/debug/Priel --shot connected|several|reader|join light|dark <file.png>` shows the window
+with a made-up network (laptop-01, lab, gate) and saves a picture of it, which is how the
+pictures on the site are made, in a virtual machine. It is in a debug build only (`swift build`).
+
 ## Releasing
 
 CI does it, from a tag. Put the version in `VERSION`, commit, then push an annotated tag whose

@@ -13,6 +13,9 @@ struct PrielApp: App {
         } label: {
             Image(systemName: monitor.phase.symbol)
                 .accessibilityLabel("juist, \(monitor.phase.label)")
+                #if DEBUG
+                .onAppear { Shot.take(monitor) }
+                #endif
         }
         .menuBarExtraStyle(.window)
     }
